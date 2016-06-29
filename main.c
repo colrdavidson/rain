@@ -30,11 +30,12 @@ int main() {
 	SDL_FreeSurface(bmp_surface);
 
 
-    for (;;) {
+	u8 running = 1;
+    while (running) {
 		SDL_Event event;
-		if (SDL_PollEvent(&event)) {
+		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT) {
-				break;
+				running = 0;
 			}
 		}
 
