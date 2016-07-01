@@ -102,8 +102,8 @@ Direction cycle_left(Direction dir) {
 }
 
 int main() {
-    u16 screen_width = 640;
-    u16 screen_height = 480;
+    u16 screen_width = 1280;
+    u16 screen_height = 720;
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, 0);
@@ -127,6 +127,7 @@ int main() {
 	SDL_Surface *west_door_bmp = SDL_LoadBMP("assets/west_door.bmp");
 	SDL_Surface *roof_bmp = SDL_LoadBMP("assets/roof.bmp");
 	SDL_Surface *cylinder_bmp = SDL_LoadBMP("assets/cylinder.bmp");
+	SDL_Surface *white_brick_bmp = SDL_LoadBMP("assets/white_brick.bmp");
 
 	SDL_SetColorKey(wall_bmp, SDL_TRUE, SDL_MapRGB(wall_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(brick_bmp, SDL_TRUE, SDL_MapRGB(brick_bmp->format, 0, 0, 0));
@@ -136,9 +137,11 @@ int main() {
 	SDL_SetColorKey(west_door_bmp, SDL_TRUE, SDL_MapRGB(west_door_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(roof_bmp, SDL_TRUE, SDL_MapRGB(roof_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(cylinder_bmp, SDL_TRUE, SDL_MapRGB(cylinder_bmp->format, 0, 0, 0));
+	SDL_SetColorKey(white_brick_bmp, SDL_TRUE, SDL_MapRGB(white_brick_bmp->format, 0, 0, 0));
 
 	SDL_Texture *wall_tex = SDL_CreateTextureFromSurface(renderer, wall_bmp);
 	SDL_Texture *brick_tex = SDL_CreateTextureFromSurface(renderer, brick_bmp);
+	SDL_Texture *white_brick_tex = SDL_CreateTextureFromSurface(renderer, white_brick_bmp);
 	SDL_Texture *grass_tex = SDL_CreateTextureFromSurface(renderer, grass_bmp);
 	SDL_Texture *wood_wall_tex = SDL_CreateTextureFromSurface(renderer, wood_wall_bmp);
 	SDL_Texture *north_door_tex = SDL_CreateTextureFromSurface(renderer, north_door_bmp);
@@ -185,8 +188,9 @@ int main() {
 	u32 player_z = 1;
 	map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 7;
 
-	i32 camera_x = 0;
+	i32 camera_x = -35;
 	i32 camera_y = screen_height / 2;
+	u32 scale = 2;
 
 	Direction direction = NORTH;
 	SDL_Surface *dir_door_bmp = north_door_bmp;
@@ -235,20 +239,32 @@ int main() {
 							direction = cycle_left(direction);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
+						case SDLK_1: {
+							scale = 1;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+						} break;
+						case SDLK_2: {
+							scale = 2;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+						} break;
+						case SDLK_3: {
+							scale = 3;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+						} break;
 						case SDLK_UP: {
-							camera_y -= 10;
+							camera_y -= 10 * scale;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_DOWN: {
-							camera_y += 10;
+							camera_y += 10 * scale;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_LEFT: {
-							camera_x -= 10;
+							camera_x -= 10 * scale;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_RIGHT: {
-							camera_x += 10;
+							camera_x += 10 * scale;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 					}
@@ -271,8 +287,8 @@ int main() {
 		SDL_QueryTexture(wall_tex, NULL, NULL, &box_width, &box_height);
 
 		SDL_Rect dest;
-		dest.w = box_width;
-		dest.h = box_height;
+		dest.w = box_width * scale;
+		dest.h = box_height * scale;
 
 		for (u32 z = 0; z < map_depth; z++) {
 			for (u32 x = 0; x < map_width; x++) {
@@ -323,8 +339,8 @@ int main() {
 						} break;
 					}
 
-					dest.x = ((cam_adj_x + cam_adj_y) * 16) + camera_x;
-					dest.y = ((cam_adj_x - cam_adj_y) * 8) - (16 * z) + camera_y;
+					dest.x = ((cam_adj_x + cam_adj_y) * 16 * scale) + camera_x;
+					dest.y = ((cam_adj_x - cam_adj_y) * 8 * scale) - (16 * scale * z) + camera_y;
 
 					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
 					switch (tile_id) {
@@ -355,6 +371,10 @@ int main() {
 						case 7: {
 							blit_surface_to_click_buffer(cylinder_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 							SDL_RenderCopy(renderer, cylinder_tex, NULL, &dest);
+						} break;
+						case 8: {
+							blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							SDL_RenderCopy(renderer, white_brick_tex, NULL, &dest);
 						} break;
 					}
 				}
