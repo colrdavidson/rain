@@ -38,20 +38,21 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 	u32 z = idx / (x_max * y_max);
 	u32 tmp_idx = idx - (z * x_max * y_max);
 
-	Point p;
-	p.x = tmp_idx % x_max;
-	p.y = tmp_idx / x_max;
+	Point p = oned_to_twod(tmp_idx, x_max);
 	p.z = z;
 
 	return p;
 }
 
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 tile_num) {
+	u32 pchunk_ptr = 0;
 	for (i32 i = 0; i < surface->w * surface->h; i++) {
-		if (((u32 *)surface->pixels)[i] != 0) {
+		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
+		if (pixel != 0) {
 			Point tmp = oned_to_twod(i, surface->w);
 	    	click_map[twod_to_oned(screen_rel_rect->x + tmp.x, screen_rel_rect->y + tmp.y, screen_width)] = tile_num;
 		}
+		pchunk_ptr += 3;
 	}
 }
 
@@ -212,27 +213,27 @@ int main() {
 						u8 tile_id = map[threed_to_oned(x, map_height - y, z, map_width, map_height)];
 						switch (tile_id) {
 							case 1: {
-                                blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, wall_tex, NULL, &dest);
 							} break;
 							case 2: {
-                                blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, grass_tex, NULL, &dest);
 							} break;
 							case 3: {
-                                blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, brick_tex, NULL, &dest);
 							} break;
 							case 4: {
-                                blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, wood_wall_tex, NULL, &dest);
 							} break;
 							case 5: {
-                                blit_surface_to_click_buffer(door_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(door_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, door_tex, NULL, &dest);
 							} break;
 							case 6: {
-                                blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, threed_to_oned(x, map_height - y, z, map_width, map_height));
+                                blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, threed_to_oned(x, y, z, map_width, map_height));
 								SDL_RenderCopy(renderer, roof_tex, NULL, &dest);
 							} break;
 						}
