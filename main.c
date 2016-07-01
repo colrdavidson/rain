@@ -34,10 +34,16 @@ Point oned_to_twod(u32 idx, u32 x_max) {
 	return p;
 }
 
-void print_as_3d(u32 idx, u32 x_max, u32 y_max) {
+Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 	u32 z = idx / (x_max * y_max);
 	u32 tmp_idx = idx - (z * x_max * y_max);
-	printf("(%d, %d, %d)\n", tmp_idx % x_max, tmp_idx / x_max, z);
+
+	Point p;
+	p.x = tmp_idx % x_max;
+	p.y = tmp_idx / x_max;
+	p.z = z;
+
+	return p;
 }
 
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 tile_num) {
@@ -173,10 +179,11 @@ int main() {
 						} break;
 					}
 				} break;
-				case SDL_MOUSEMOTION: {
+				case SDL_MOUSEBUTTONDOWN: {
 					i32 mouse_x, mouse_y;
 					SDL_GetMouseState(&mouse_x, &mouse_y);
-					printf("(%d, %d) | click_map[%u] = %u\n", mouse_x, mouse_y, twod_to_oned(mouse_x, mouse_y, screen_width), click_map[twod_to_oned(mouse_x, mouse_y, screen_width)]);
+					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
+					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 				} break;
 				case SDL_QUIT: {
 					running = 0;
