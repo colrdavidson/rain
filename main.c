@@ -168,15 +168,19 @@ int main() {
 						} break;
 						case SDLK_UP: {
 							camera_y -= 10;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_DOWN: {
 							camera_y += 10;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_LEFT: {
 							camera_x -= 10;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_RIGHT: {
 							camera_x += 10;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 					}
 				} break;
