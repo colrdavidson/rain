@@ -52,7 +52,7 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 		if (pixel != 0) {
 			Point pix_pos = oned_to_twod(i, surface->w);
 			u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
-			if (click_idx <= screen_width * screen_height) {
+			if (click_idx < screen_width * screen_height) {
 				click_map[click_idx] = tile_num;
 			}
 		}
