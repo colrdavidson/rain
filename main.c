@@ -64,8 +64,8 @@ int main() {
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 
-	u32 *click_map = malloc(screen_width * screen_height);
-	memset(click_map, 0, screen_width * screen_height);
+	u32 *click_map = malloc(screen_width * screen_height * sizeof(u32));
+	memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 
 	SDL_Surface *wall_bmp = SDL_LoadBMP("assets/wall.bmp");
 	SDL_Surface *brick_bmp = SDL_LoadBMP("assets/brick.bmp");
@@ -236,16 +236,6 @@ int main() {
 
 		SDL_RenderPresent(renderer);
 	}
-
-	FILE *click_dump = fopen("click_dump", "w");
-	for (u32 i = 0; i < screen_width * screen_height; i++) {
-		if ((i % screen_width) == 0) {
-			fputs("\n", click_dump);
-		}
-		fprintf(click_dump, "%u ", click_map[i]);
-	}
-	fputs("", click_dump);
-	fclose(click_dump);
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
