@@ -139,6 +139,7 @@ int main() {
     u32 player_x = 0;
 	u32 player_y = 0;
 	u32 player_z = 1;
+	map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 7;
 
 	i32 camera_x = 0;
 	i32 camera_y = screen_height / 2;
@@ -151,22 +152,30 @@ int main() {
 				case SDL_KEYDOWN: {
 					switch (event.key.keysym.sym) {
 						case SDLK_a: {
-							if ((player_x > 0) && map[threed_to_oned(player_x - 1, map_height - player_y, player_z, map_width, map_height)] == 0) {
+							if ((player_x > 0) && map[threed_to_oned(player_x - 1, player_y, player_z, map_width, map_height)] == 0) {
+								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+								map[threed_to_oned(player_x - 1, player_y, player_z, map_width, map_height)] = 7;
 								player_x -= 1;
 							}
 						} break;
 						case SDLK_d: {
-							if ((player_x < map_width) && map[threed_to_oned(player_x + 1, map_height - player_y, player_z, map_width, map_height)] == 0) {
+							if ((player_x < map_width - 1) && map[threed_to_oned(player_x + 1, player_y, player_z, map_width, map_height)] == 0) {
+								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+								map[threed_to_oned(player_x + 1, player_y, player_z, map_width, map_height)] = 7;
 								player_x += 1;
 							}
 						} break;
-						case SDLK_w: {
-							if ((player_y < map_height) && map[threed_to_oned(player_x, map_height - player_y - 1, player_z, map_width, map_height)] == 0) {
+						case SDLK_s: {
+							if ((player_y < map_height - 1) && map[threed_to_oned(player_x, player_y + 1, player_z, map_width, map_height)] == 0) {
+								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+								map[threed_to_oned(player_x, player_y + 1, player_z, map_width, map_height)] = 7;
 								player_y += 1;
 							}
 						} break;
-						case SDLK_s: {
-							if ((player_y > 0) && map[threed_to_oned(player_x, map_height - player_y + 1, player_z, map_width, map_height)] == 0){
+						case SDLK_w: {
+							if ((player_y > 0) && map[threed_to_oned(player_x, player_y - 1, player_z, map_width, map_height)] == 0){
+								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+								map[threed_to_oned(player_x, player_y - 1, player_z, map_width, map_height)] = 7;
 								player_y -= 1;
 							}
 						} break;
