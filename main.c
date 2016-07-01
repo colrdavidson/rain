@@ -123,7 +123,8 @@ int main() {
 	SDL_Surface *brick_bmp = SDL_LoadBMP("assets/brick.bmp");
 	SDL_Surface *grass_bmp = SDL_LoadBMP("assets/grass.bmp");
 	SDL_Surface *wood_wall_bmp = SDL_LoadBMP("assets/wood_wall.bmp");
-	SDL_Surface *door_bmp = SDL_LoadBMP("assets/door.bmp");
+	SDL_Surface *north_door_bmp = SDL_LoadBMP("assets/north_door.bmp");
+	SDL_Surface *west_door_bmp = SDL_LoadBMP("assets/west_door.bmp");
 	SDL_Surface *roof_bmp = SDL_LoadBMP("assets/roof.bmp");
 	SDL_Surface *cylinder_bmp = SDL_LoadBMP("assets/cylinder.bmp");
 
@@ -131,7 +132,8 @@ int main() {
 	SDL_SetColorKey(brick_bmp, SDL_TRUE, SDL_MapRGB(brick_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(grass_bmp, SDL_TRUE, SDL_MapRGB(grass_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(wood_wall_bmp, SDL_TRUE, SDL_MapRGB(wood_wall_bmp->format, 0, 0, 0));
-	SDL_SetColorKey(door_bmp, SDL_TRUE, SDL_MapRGB(door_bmp->format, 0, 0, 0));
+	SDL_SetColorKey(north_door_bmp, SDL_TRUE, SDL_MapRGB(north_door_bmp->format, 0, 0, 0));
+	SDL_SetColorKey(west_door_bmp, SDL_TRUE, SDL_MapRGB(west_door_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(roof_bmp, SDL_TRUE, SDL_MapRGB(roof_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(cylinder_bmp, SDL_TRUE, SDL_MapRGB(cylinder_bmp->format, 0, 0, 0));
 
@@ -139,7 +141,8 @@ int main() {
 	SDL_Texture *brick_tex = SDL_CreateTextureFromSurface(renderer, brick_bmp);
 	SDL_Texture *grass_tex = SDL_CreateTextureFromSurface(renderer, grass_bmp);
 	SDL_Texture *wood_wall_tex = SDL_CreateTextureFromSurface(renderer, wood_wall_bmp);
-	SDL_Texture *door_tex = SDL_CreateTextureFromSurface(renderer, door_bmp);
+	SDL_Texture *north_door_tex = SDL_CreateTextureFromSurface(renderer, north_door_bmp);
+	SDL_Texture *west_door_tex = SDL_CreateTextureFromSurface(renderer, west_door_bmp);
 	SDL_Texture *roof_tex = SDL_CreateTextureFromSurface(renderer, roof_bmp);
 	SDL_Texture *cylinder_tex = SDL_CreateTextureFromSurface(renderer, cylinder_bmp);
 
@@ -186,6 +189,8 @@ int main() {
 	i32 camera_y = screen_height / 2;
 
 	Direction direction = NORTH;
+	SDL_Surface *dir_door_bmp = north_door_bmp;
+	SDL_Texture *dir_door_tex = north_door_tex;
 
 	u8 running = 1;
     while (running) {
@@ -280,6 +285,7 @@ int main() {
 					u32 cam_adj_x;
 					u32 cam_adj_y;
 
+
 					switch (direction) {
 						case NORTH: {
 							adj_y = y;
@@ -287,6 +293,9 @@ int main() {
 
 							cam_adj_x = x;
 							cam_adj_y = map_height - y;
+
+							dir_door_bmp = north_door_bmp;
+							dir_door_tex = north_door_tex;
 						} break;
 						case EAST: {
 							adj_y = map_height - y - 1;
@@ -308,6 +317,9 @@ int main() {
 
 							cam_adj_x = y;
 							cam_adj_y = map_width - x;
+
+							dir_door_bmp = west_door_bmp;
+							dir_door_tex = west_door_tex;
 						} break;
 					}
 
@@ -333,8 +345,8 @@ int main() {
 							SDL_RenderCopy(renderer, wood_wall_tex, NULL, &dest);
 						} break;
 						case 5: {
-							blit_surface_to_click_buffer(door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							SDL_RenderCopy(renderer, door_tex, NULL, &dest);
+							blit_surface_to_click_buffer(dir_door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							SDL_RenderCopy(renderer, dir_door_tex, NULL, &dest);
 						} break;
 						case 6: {
 							blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
