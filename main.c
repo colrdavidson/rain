@@ -131,13 +131,14 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 		return;
 	}
 
+	SDL_Surface *scaled = SDL_CreateRGBSurface(0, screen_rel_rect->w, screen_rel_rect->h, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
 
-	//printf("%d\n", screen_rel_rect->w);
+	SDL_BlitScaled(surface, NULL, scaled, NULL);
 
-	for (i32 i = 0; i < surface->w * surface->h; i++) {
-		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
+	for (i32 i = 0; i < scaled->w * scaled->h; i++) {
+		u32 pixel = ((u8 *)scaled->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)scaled->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)scaled->pixels)[pchunk_ptr];
 		if (pixel != 0) {
-			Point pix_pos = oned_to_twod(i, surface->w);
+			Point pix_pos = oned_to_twod(i, scaled->w);
 			if ((screen_rel_rect->x + pix_pos.x < screen_width) && (screen_rel_rect->y + pix_pos.y < screen_height)) {
 				u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
 				if (click_idx < screen_width * screen_height) {
@@ -147,6 +148,8 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 		}
 		pchunk_ptr += 3;
 	}
+
+	SDL_FreeSurface(scaled);
 }
 
 Direction cycle_right(Direction dir) {
@@ -365,7 +368,7 @@ int main() {
 					mouse_x = ((float)screen_width / (float)original_screen_width) * mouse_x;
 					mouse_y = ((float)screen_height / (float)original_screen_height) * mouse_y;
 
-					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x * scale, mouse_y * scale, screen_width)], map_width, map_height);
+					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 				} break;
 				case SDL_QUIT: {
