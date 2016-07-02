@@ -125,11 +125,12 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
-	//u32 scale = screen_rel_rect->w / surface->w;
+	u32 scale = screen_rel_rect->w / surface->w;
 
 	if ((screen_rel_rect->x >= screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= screen_width) || (screen_rel_rect->y >= screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= screen_height)) {
 		return;
 	}
+
 
 	//printf("%d\n", screen_rel_rect->w);
 
@@ -333,19 +334,19 @@ int main() {
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_UP: {
-							camera_y -= 10 * scale;
+							camera_y -= 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_DOWN: {
-							camera_y += 10 * scale;
+							camera_y += 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_LEFT: {
-							camera_x -= 10 * scale;
+							camera_x -= 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 						case SDLK_RIGHT: {
-							camera_x += 10 * scale;
+							camera_x += 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 						} break;
 					}
@@ -375,13 +376,11 @@ int main() {
 			for (u32 x = 0; x < map_width; x++) {
 				for (u32 y = 0; y < map_height; y++) {
 
-
 					u32 adj_y;
 					u32 adj_x;
 
 					u32 cam_adj_x;
 					u32 cam_adj_y;
-
 
 					switch (direction) {
 						case NORTH: {
@@ -420,8 +419,8 @@ int main() {
 						} break;
 					}
 
-					dest.x = ((cam_adj_x + cam_adj_y) * 16 * scale) + camera_x;
-					dest.y = ((cam_adj_x - cam_adj_y) * 8 * scale) - (16 * scale * z) + camera_y;
+					dest.x = (((cam_adj_x + cam_adj_y) * 16) + camera_x) * scale;
+					dest.y = (((cam_adj_x - cam_adj_y) * 8) - (16 * z) + camera_y) * scale;
 
 					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
 					switch (tile_id) {
