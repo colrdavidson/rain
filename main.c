@@ -23,6 +23,10 @@ typedef enum Direction {
 	EAST,
 } Direction;
 
+typedef struct GridNode {
+	u32 tile_type;
+} GridNode;
+
 u32 threed_to_oned(u32 x, u32 y, u32 z, u32 x_max, u32 y_max) {
 	return (z * x_max * y_max) + (y * x_max) + x;
 }
@@ -54,13 +58,20 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
+
+	if ((screen_rel_rect->x >= screen_width && screen_rel_rect->x + surface->w >= screen_width) || (screen_rel_rect->y >= screen_height && screen_rel_rect->y + surface->h >= screen_height)) {
+		return;
+	}
+
 	for (i32 i = 0; i < surface->w * surface->h; i++) {
 		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
 		if (pixel != 0) {
 			Point pix_pos = oned_to_twod(i, surface->w);
-			u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
-			if (click_idx < screen_width * screen_height) {
-				click_map[click_idx] = tile_num;
+			if ((screen_rel_rect->x + pix_pos.x < screen_width) && (screen_rel_rect->y + pix_pos.y < screen_height)) {
+				u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
+				if (click_idx < screen_width * screen_height) {
+					click_map[click_idx] = tile_num;
+				}
 			}
 		}
 		pchunk_ptr += 3;
@@ -102,8 +113,8 @@ Direction cycle_left(Direction dir) {
 }
 
 int main() {
-    u16 screen_width = 1280;
-    u16 screen_height = 720;
+    u16 screen_width = 640;
+    u16 screen_height = 480;
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, 0);
@@ -190,7 +201,7 @@ int main() {
 
 	i32 camera_x = -35;
 	i32 camera_y = screen_height / 2;
-	u32 scale = 2;
+	u32 scale = 1;
 
 	Direction direction = NORTH;
 	SDL_Surface *dir_door_bmp = north_door_bmp;
