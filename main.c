@@ -27,6 +27,73 @@ typedef struct GridNode {
 	u32 tile_type;
 } GridNode;
 
+typedef struct Color {
+	union {
+		struct {
+			u8 red;
+			u8 green;
+			u8 blue;
+			u8 alpha;
+		};
+		u32 value;
+	};
+} Color;
+
+typedef struct Image {
+    u16 width;
+    u16 height;
+    u8 bytes_per_pixel;
+    Color *data;
+} Image;
+
+typedef struct TGAHeader {
+    u8 id_len;
+    u8 colormap_t;
+    u8 data_t;
+    u16 colormap_origin;
+    u8 colormap_depth;
+    u16 x_origin;
+    u16 y_origin;
+    u16 width;
+    u16 height;
+    u8 bits_per_pixel;
+    u8 img_desc;
+} TGAHeader;
+
+void print_color(u32 idx, Color *data) {
+	printf("#%06X\n", data[idx].value);
+}
+
+Color to_color(u32 value) {
+	Color c;
+	c.value = value;
+	return c;
+}
+
+void write_tga(const char *filename, Image *img) {
+    FILE *out_file = fopen(filename, "wb");
+
+    u8 dev_ref[4] = {0, 0, 0, 0};
+    u8 ext_ref[4] = {0, 0, 0, 0};
+    u8 footer[18] = {'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'};
+
+    TGAHeader header;
+    memset((void *)&header, 0, sizeof(header));
+    header.bits_per_pixel = img->bytes_per_pixel << 3;
+    header.width = img->width;
+    header.height = img->height;
+    header.data_t = 2;
+    header.img_desc = 0x08;
+
+    fwrite(&header, 1, sizeof(TGAHeader), out_file);
+    fwrite((char *)img->data, 1, img->width * img->height * img->bytes_per_pixel, out_file);
+    fwrite(dev_ref, 1, sizeof(dev_ref), out_file);
+    fwrite(ext_ref, 1, sizeof(ext_ref), out_file);
+    fwrite(footer, 1, sizeof(footer), out_file);
+
+    fclose(out_file);
+}
+
 u32 threed_to_oned(u32 x, u32 y, u32 z, u32 x_max, u32 y_max) {
 	return (z * x_max * y_max) + (y * x_max) + x;
 }
@@ -58,10 +125,13 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
+	//u32 scale = screen_rel_rect->w / surface->w;
 
-	if ((screen_rel_rect->x >= screen_width && screen_rel_rect->x + surface->w >= screen_width) || (screen_rel_rect->y >= screen_height && screen_rel_rect->y + surface->h >= screen_height)) {
+	if ((screen_rel_rect->x >= screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= screen_width) || (screen_rel_rect->y >= screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= screen_height)) {
 		return;
 	}
+
+	//printf("%d\n", screen_rel_rect->w);
 
 	for (i32 i = 0; i < surface->w * surface->h; i++) {
 		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
@@ -394,6 +464,13 @@ int main() {
 
 		SDL_RenderPresent(renderer);
 	}
+
+	Image img;
+    img.width = screen_width;
+    img.height = screen_height;
+    img.bytes_per_pixel = 4;
+	img.data = (Color *)click_map;
+	write_tga("test.tga", &img);
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
