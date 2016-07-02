@@ -184,11 +184,13 @@ Direction cycle_left(Direction dir) {
 }
 
 int main() {
-    i32 screen_width = 640;
-    i32 screen_height = 480;
+	u16 original_screen_width = 640;
+	u16 original_screen_height = 480;
+    i32 screen_width;
+    i32 screen_height;
 
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_GL_GetDrawableSize(window, &screen_width, &screen_height);
 
 
@@ -359,6 +361,10 @@ int main() {
 				case SDL_MOUSEBUTTONDOWN: {
 					i32 mouse_x, mouse_y;
 					SDL_GetMouseState(&mouse_x, &mouse_y);
+
+					mouse_x = ((float)screen_width / (float)original_screen_width) * mouse_x;
+					mouse_y = ((float)screen_height / (float)original_screen_height) * mouse_y;
+
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x * scale, mouse_y * scale, screen_width)], map_width, map_height);
 					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 				} break;
