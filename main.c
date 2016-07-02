@@ -243,7 +243,7 @@ int main() {
 	fgets(line, 256, fp);
 	u32 map_width = atoi(strtok(line, " "));
 	u32 map_height = atoi(strtok(NULL, " "));
-	u32 map_depth = atoi(strtok(NULL, " "));
+	u32 map_depth = atoi(strtok(NULL, " ")) + 1;
 	printf("Map Size: %dx%dx%d\n", map_width, map_height, map_depth);
 
 	u8 map[map_width * map_depth * map_height];
@@ -251,7 +251,7 @@ int main() {
 
 	fgets(line, 256, fp);
 
-	for (u8 z = 0; z < map_depth; z++) {
+	for (u8 z = 0; z < map_depth - 1; z++) {
 		for (u8 y = 0; y < map_height; y++) {
 			u8 new_line = 1;
 			for (u8 x = 0; x < map_width; x++) {
@@ -316,12 +316,6 @@ int main() {
 							}
 						} break;
 						case SDLK_w: {
-							if ((player_y > 0) && map[threed_to_oned(player_x, player_y - 1, player_z, map_width, map_height)] == 0){
-								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
-								map[threed_to_oned(player_x, player_y - 1, player_z, map_width, map_height)] = 7;
-								player_y -= 1;
-								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							}
 						} break;
 						case SDLK_e: {
 							direction = cycle_right(direction);
@@ -370,6 +364,15 @@ int main() {
 
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
+
+					if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+						map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+						map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
+						player_x = p.x;
+						player_y = p.y;
+						player_z = p.z + 1;
+						memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+					}
 				} break;
 				case SDL_QUIT: {
 					running = 0;
