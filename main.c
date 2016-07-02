@@ -125,9 +125,9 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
-	u32 scale = screen_rel_rect->w / surface->w;
+	//u32 scale = screen_rel_rect->w / surface->w;
 
-	if ((screen_rel_rect->x >= screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= screen_width) || (screen_rel_rect->y >= screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= screen_height)) {
+	if ((screen_rel_rect->x >= (i32)screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= (i32)screen_width) || (screen_rel_rect->y >= (i32)screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= (i32)screen_height)) {
 		return;
 	}
 
@@ -184,11 +184,12 @@ Direction cycle_left(Direction dir) {
 }
 
 int main() {
-    u16 screen_width = 640;
-    u16 screen_height = 480;
+    i32 screen_width = 640;
+    i32 screen_height = 480;
 
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, 0);
+	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_GL_GetDrawableSize(window, &screen_width, &screen_height);
 
 
 	if (window == NULL) {
@@ -290,6 +291,7 @@ int main() {
 								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
 								map[threed_to_oned(player_x - 1, player_y, player_z, map_width, map_height)] = 7;
 								player_x -= 1;
+								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							}
 						} break;
 						case SDLK_d: {
@@ -297,6 +299,7 @@ int main() {
 								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
 								map[threed_to_oned(player_x + 1, player_y, player_z, map_width, map_height)] = 7;
 								player_x += 1;
+								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							}
 						} break;
 						case SDLK_s: {
@@ -304,6 +307,7 @@ int main() {
 								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
 								map[threed_to_oned(player_x, player_y + 1, player_z, map_width, map_height)] = 7;
 								player_y += 1;
+								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							}
 						} break;
 						case SDLK_w: {
@@ -311,6 +315,7 @@ int main() {
 								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
 								map[threed_to_oned(player_x, player_y - 1, player_z, map_width, map_height)] = 7;
 								player_y -= 1;
+								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							}
 						} break;
 						case SDLK_e: {
@@ -354,7 +359,7 @@ int main() {
 				case SDL_MOUSEBUTTONDOWN: {
 					i32 mouse_x, mouse_y;
 					SDL_GetMouseState(&mouse_x, &mouse_y);
-					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
+					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x * scale, mouse_y * scale, screen_width)], map_width, map_height);
 					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 				} break;
 				case SDL_QUIT: {
