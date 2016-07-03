@@ -1,34 +1,15 @@
 #include "SDL2/SDL.h"
 #include <stdio.h>
 
-typedef unsigned long u64;
-typedef unsigned int u32;
-typedef unsigned short u16;
-typedef unsigned char u8;
-typedef long i64;
-typedef int i32;
-typedef short i16;
-typedef char i8;
-
-typedef struct Point {
-	u32 x;
-	u32 y;
-	u32 z;
-} Point;
-
-typedef enum Direction {
-	NORTH,
-	EAST,
-	SOUTH,
-	WEST,
-} Direction;
+#include "common.h"
+#include "tga.h"
+#include "point.h"
 
 typedef struct GridNode {
 	u32 tile_id;
 	struct GridNode **neighbors;
 } GridNode;
 
-#define max_neighbors 4
 
 typedef struct SearchNode {
 	u8 visited;
@@ -36,100 +17,6 @@ typedef struct SearchNode {
 	struct SearchNode *next;
 } SearchNode;
 
-typedef struct Color {
-	union {
-		struct {
-			u8 red;
-			u8 green;
-			u8 blue;
-			u8 alpha;
-		};
-		u32 value;
-	};
-} Color;
-
-typedef struct Image {
-    u16 width;
-    u16 height;
-    u8 bytes_per_pixel;
-    Color *data;
-} Image;
-
-typedef struct TGAHeader {
-    u8 id_len;
-    u8 colormap_t;
-    u8 data_t;
-    u16 colormap_origin;
-    u8 colormap_depth;
-    u16 x_origin;
-    u16 y_origin;
-    u16 width;
-    u16 height;
-    u8 bits_per_pixel;
-    u8 img_desc;
-} TGAHeader;
-
-void print_color(u32 idx, Color *data) {
-	printf("#%06X\n", data[idx].value);
-}
-
-Color to_color(u32 value) {
-	Color c;
-	c.value = value;
-	return c;
-}
-
-void write_tga(const char *filename, Image *img) {
-    FILE *out_file = fopen(filename, "wb");
-
-    u8 dev_ref[4] = {0, 0, 0, 0};
-    u8 ext_ref[4] = {0, 0, 0, 0};
-    u8 footer[18] = {'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'};
-
-    TGAHeader header;
-    memset((void *)&header, 0, sizeof(header));
-    header.bits_per_pixel = img->bytes_per_pixel << 3;
-    header.width = img->width;
-    header.height = img->height;
-    header.data_t = 2;
-    header.img_desc = 0x08;
-
-    fwrite(&header, 1, sizeof(TGAHeader), out_file);
-    fwrite((char *)img->data, 1, img->width * img->height * img->bytes_per_pixel, out_file);
-    fwrite(dev_ref, 1, sizeof(dev_ref), out_file);
-    fwrite(ext_ref, 1, sizeof(ext_ref), out_file);
-    fwrite(footer, 1, sizeof(footer), out_file);
-
-    fclose(out_file);
-}
-
-u32 threed_to_oned(u32 x, u32 y, u32 z, u32 x_max, u32 y_max) {
-	return (z * x_max * y_max) + (y * x_max) + x;
-}
-
-u32 twod_to_oned(u32 x, u32 y, u32 x_max) {
-	return (y * x_max) + x;
-}
-
-Point oned_to_twod(u32 idx, u32 x_max) {
-	Point p;
-
-	p.x = idx % x_max;
-	p.y = idx / x_max;
-	p.z = 0;
-
-	return p;
-}
-
-Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
-	u32 z = idx / (x_max * y_max);
-	u32 tmp_idx = idx - (z * x_max * y_max);
-
-	Point p = oned_to_twod(tmp_idx, x_max);
-	p.z = z;
-
-	return p;
-}
 
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
@@ -160,39 +47,6 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 	SDL_FreeSurface(scaled);
 }
 
-Direction cycle_right(Direction dir) {
-	switch (dir) {
-		case NORTH: {
-			return EAST;
-		} break;
-		case EAST: {
-			return SOUTH;
-		} break;
-		case SOUTH: {
-			return WEST;
-		} break;
-		case WEST: {
-			return NORTH;
-		} break;
-	}
-}
-
-Direction cycle_left(Direction dir) {
-	switch (dir) {
-		case NORTH: {
-			return WEST;
-		} break;
-		case WEST: {
-			return SOUTH;
-		} break;
-		case SOUTH: {
-			return EAST;
-		} break;
-		case EAST: {
-			return NORTH;
-		} break;
-	}
-}
 
 int main() {
 	u16 original_screen_width = 640;
@@ -292,6 +146,8 @@ int main() {
 	SDL_Surface *dir_door_bmp = north_door_bmp;
 	SDL_Texture *dir_door_tex = north_door_tex;
 
+
+	u32 max_neighbors = 4;
 	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height);
 	for (u32 x = 0; x < map_width; x++) {
 		for (u32 y = 0; y < map_height; y++) {
