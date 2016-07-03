@@ -68,12 +68,61 @@ void lappend(PathNode **head, Point p) {
 	*head = tmp;
 }
 
+void lreverse(PathNode **head) {
+	PathNode *prev = NULL;
+	PathNode *cur = *head;
+	PathNode *next;
+
+	while (cur != NULL) {
+		next = cur->next;
+		cur->next = prev;
+		prev = cur;
+		cur = next;
+	}
+
+	*head = prev;
+}
+
 void lprint(PathNode *head) {
 	PathNode *tmp = head;
 	while (tmp != NULL) {
 		printf("(%u, %u, %u)\n", tmp->p.x, tmp->p.y, tmp->p.z);
 		tmp = tmp->next;
 	}
+}
+
+PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 max_neighbors) {
+	QueueNode *head = NULL;
+	QueueNode *tail = NULL;
+	GridNode **from = malloc(map_width * map_height * sizeof(GridNode));
+
+	qpush(&head, &tail, &node_map[twod_to_oned(start.x, start.y, map_width)]);
+	from[twod_to_oned(start.x, start.y, map_width)] = NULL;
+
+	while (head != NULL && tail != NULL) {
+		GridNode *cur_tile = qpop(&head);
+
+		if (cur_tile->tile_id == twod_to_oned(goal.x, goal.y, map_width)) {
+			break;
+		}
+
+		for (u32 i = 0; i < max_neighbors; i++) {
+			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_id]) {
+				qpush(&head, &tail, cur_tile->neighbors[i]);
+				from[cur_tile->neighbors[i]->tile_id] = cur_tile;
+			}
+		}
+	}
+
+	PathNode *path_head = malloc(sizeof(PathNode));
+	path_head->p = goal;
+	path_head->next = NULL;
+
+    while (point_eq(path_head->p, start)) {
+		lappend(&path_head, oned_to_twod(from[twod_to_oned(path_head->p.x, path_head->p.y, map_height)]->tile_id, map_width));
+	}
+
+	return path_head;
 }
 
 #endif
