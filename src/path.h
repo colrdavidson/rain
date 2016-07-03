@@ -7,7 +7,8 @@
 #include "point.h"
 
 typedef struct GridNode {
-	u32 tile_id;
+	u32 tile_pos;
+	u32 tile_type;
 	struct GridNode **neighbors;
 } GridNode;
 
@@ -55,7 +56,7 @@ GridNode *qpop(QueueNode **head) {
 void qprint(QueueNode *head) {
 	QueueNode *tmp = head;
 	while (tmp != NULL) {
-		printf("%d\n", tmp->tile->tile_id);
+		printf("%d\n", tmp->tile->tile_pos);
 		tmp = tmp->next;
 	}
 }
@@ -91,25 +92,25 @@ void lprint(PathNode *head) {
 	}
 }
 
-PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 max_neighbors) {
+PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 map_depth, u32 max_neighbors) {
 	QueueNode *head = NULL;
 	QueueNode *tail = NULL;
-	GridNode **from = malloc(map_width * map_height * sizeof(GridNode));
+	GridNode **from = malloc(map_width * map_height * map_depth * sizeof(GridNode));
 
-	qpush(&head, &tail, &node_map[twod_to_oned(start.x, start.y, map_width)]);
-	from[twod_to_oned(start.x, start.y, map_width)] = NULL;
+	qpush(&head, &tail, &node_map[threed_to_oned(start.x, start.y, start.z, map_width, map_height)]);
+	from[threed_to_oned(start.x, start.y, start.z, map_width, map_height)] = NULL;
 
 	while (head != NULL && tail != NULL) {
 		GridNode *cur_tile = qpop(&head);
 
-		if (cur_tile->tile_id == twod_to_oned(goal.x, goal.y, map_width)) {
+		if (cur_tile->tile_pos == threed_to_oned(goal.x, goal.y, goal.z, map_width, map_height)) {
 			break;
 		}
 
 		for (u32 i = 0; i < max_neighbors; i++) {
-			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_id]) {
+			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && cur_tile->neighbors[i]->tile_type == 0) {
 				qpush(&head, &tail, cur_tile->neighbors[i]);
-				from[cur_tile->neighbors[i]->tile_id] = cur_tile;
+				from[cur_tile->neighbors[i]->tile_pos] = cur_tile;
 			}
 		}
 	}
@@ -119,7 +120,12 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	path_head->next = NULL;
 
     while (point_eq(path_head->p, start)) {
-		lappend(&path_head, oned_to_twod(from[twod_to_oned(path_head->p.x, path_head->p.y, map_height)]->tile_id, map_width));
+		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
+        if (tmp == NULL) {
+			return NULL;
+		}
+
+		lappend(&path_head, oned_to_threed(tmp->tile_pos, map_width, map_height));
 	}
 
 	return path_head;

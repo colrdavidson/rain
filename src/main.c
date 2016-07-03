@@ -135,44 +135,53 @@ int main() {
 
 
 	u32 max_neighbors = 4;
-	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height);
+	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height * map_depth);
 	for (u32 x = 0; x < map_width; x++) {
 		for (u32 y = 0; y < map_height; y++) {
-			GridNode tmp;
-			tmp.tile_id = twod_to_oned(x, y, map_width);
-			tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
+			for (u32 z = 0; z < map_depth; z++) {
+				GridNode tmp;
+				tmp.tile_pos = threed_to_oned(x, y, z, map_width, map_height);
+				tmp.tile_type = map[tmp.tile_pos];
+				tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
 
-			node_map[twod_to_oned(x, y, map_width)] = tmp;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)] = tmp;
+			}
 		}
 	}
 
 	for (u32 y = 0; y < map_height; y++) {
     	for (u32 x = 0; x < map_width; x++) {
-			node_map[twod_to_oned(x, y, map_width)].neighbors[SOUTH] = NULL;
-			node_map[twod_to_oned(x, y, map_width)].neighbors[EAST] = NULL;
-			node_map[twod_to_oned(x, y, map_width)].neighbors[WEST] = NULL;
-			node_map[twod_to_oned(x, y, map_width)].neighbors[NORTH] = NULL;
+    		for (u32 z = 0; z < map_depth; z++) {
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = NULL;
 
-			if (y < map_height - 1) {
-				node_map[twod_to_oned(x, y, map_width)].neighbors[SOUTH] = &node_map[twod_to_oned(x, y + 1, map_width)];
-			}
-			if (x < map_width - 1) {
-				node_map[twod_to_oned(x, y, map_width)].neighbors[EAST] = &node_map[twod_to_oned(x + 1, y, map_width)];
-			}
-			if (x > 0) {
-				node_map[twod_to_oned(x, y, map_width)].neighbors[WEST] = &node_map[twod_to_oned(x - 1, y, map_width)];
-			}
-			if (y > 0) {
-				node_map[twod_to_oned(x, y, map_width)].neighbors[NORTH] = &node_map[twod_to_oned(x, y - 1, map_width)];
+				if (y < map_height - 1) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = &node_map[threed_to_oned(x, y + 1, z, map_width, map_height)];
+				}
+				if (x < map_width - 1) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = &node_map[threed_to_oned(x + 1, y, z, map_width, map_height)];
+				}
+				if (x > 0) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = &node_map[threed_to_oned(x - 1, y, z, map_width, map_height)];
+				}
+				if (y > 0) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
+				}
 			}
 		}
 	}
 
-    Point start = new_point(1, 1, 0);
-	Point goal = new_point(1, 5, 0);
-	PathNode *path = find_path(start, goal, node_map, map_width, map_height, max_neighbors);
+    Point start = new_point(0, 10, 1);
+	Point goal = new_point(19, 10, 1);
+	PathNode *path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
 
-	lprint(path);
+	PathNode *tmp = path;
+	while (tmp != NULL) {
+		map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 4;
+		tmp = tmp->next;
+	}
 
 	u8 running = 1;
     while (running) {
@@ -181,32 +190,6 @@ int main() {
 			switch (event.type) {
 				case SDL_KEYDOWN: {
 					switch (event.key.keysym.sym) {
-						case SDLK_a: {
-							if ((player_x > 0) && map[threed_to_oned(player_x - 1, player_y, player_z, map_width, map_height)] == 0) {
-								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
-								map[threed_to_oned(player_x - 1, player_y, player_z, map_width, map_height)] = 7;
-								player_x -= 1;
-								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							}
-						} break;
-						case SDLK_d: {
-							if ((player_x < map_width - 1) && map[threed_to_oned(player_x + 1, player_y, player_z, map_width, map_height)] == 0) {
-								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
-								map[threed_to_oned(player_x + 1, player_y, player_z, map_width, map_height)] = 7;
-								player_x += 1;
-								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							}
-						} break;
-						case SDLK_s: {
-							if ((player_y < map_height - 1) && map[threed_to_oned(player_x, player_y + 1, player_z, map_width, map_height)] == 0) {
-								map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
-								map[threed_to_oned(player_x, player_y + 1, player_z, map_width, map_height)] = 7;
-								player_y += 1;
-								memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							}
-						} break;
-						case SDLK_w: {
-						} break;
 						case SDLK_e: {
 							direction = cycle_right(direction);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
