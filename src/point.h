@@ -78,4 +78,20 @@ Direction cycle_left(Direction dir) {
 	}
 }
 
+int point_eq(Point a, Point b) {
+	if (a.x == b.x && a.y == b.y && a.z == b.z) {
+		return 0;
+	}
+	return 1;
+}
+
+Point new_point(u32 x, u32 y, u32 z) {
+	Point p;
+	p.x = x;
+	p.y = y;
+	p.z = z;
+
+	return p;
+}
+
 #endif
