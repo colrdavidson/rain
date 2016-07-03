@@ -18,14 +18,23 @@ typedef struct Point {
 
 typedef enum Direction {
 	NORTH,
+	EAST,
 	SOUTH,
 	WEST,
-	EAST,
 } Direction;
 
 typedef struct GridNode {
-	u32 tile_type;
+	u32 tile_id;
+	struct GridNode **neighbors;
 } GridNode;
+
+#define max_neighbors 4
+
+typedef struct SearchNode {
+	u8 visited;
+	GridNode *tile;
+	struct SearchNode *next;
+} SearchNode;
 
 typedef struct Color {
 	union {
@@ -125,7 +134,6 @@ Point oned_to_threed(u32 idx, u32 x_max, u32 y_max) {
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
-	//u32 scale = screen_rel_rect->w / surface->w;
 
 	if ((screen_rel_rect->x >= (i32)screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= (i32)screen_width) || (screen_rel_rect->y >= (i32)screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= (i32)screen_height)) {
 		return;
@@ -283,6 +291,60 @@ int main() {
 	Direction direction = NORTH;
 	SDL_Surface *dir_door_bmp = north_door_bmp;
 	SDL_Texture *dir_door_tex = north_door_tex;
+
+	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height);
+	for (u32 x = 0; x < map_width; x++) {
+		for (u32 y = 0; y < map_height; y++) {
+			GridNode tmp;
+			tmp.tile_id = twod_to_oned(x, y, map_width);
+			tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
+
+			node_map[twod_to_oned(x, y, map_width)] = tmp;
+		}
+	}
+
+	for (u32 y = 0; y < map_height; y++) {
+    	for (u32 x = 0; x < map_width; x++) {
+			if (y < map_height - 1) {
+				node_map[twod_to_oned(x, y, map_width)].neighbors[SOUTH] = &node_map[twod_to_oned(x, y + 1, map_width)];
+			}
+			if (x < map_width - 1) {
+				node_map[twod_to_oned(x, y, map_width)].neighbors[EAST] = &node_map[twod_to_oned(x + 1, y, map_width)];
+			}
+			if (x > 0) {
+				node_map[twod_to_oned(x, y, map_width)].neighbors[WEST] = &node_map[twod_to_oned(x - 1, y, map_width)];
+			}
+			if (y > 0) {
+				node_map[twod_to_oned(x, y, map_width)].neighbors[NORTH] = &node_map[twod_to_oned(x, y - 1, map_width)];
+			}
+		}
+	}
+
+	SearchNode start;
+	start.visited = 1;
+	start.tile = &node_map[twod_to_oned(1, 1, map_width)];
+	start.next = NULL;
+
+	SearchNode *cur_node = &start;
+ 	GridNode *cur_tile = cur_node->tile;
+	for (u32 i = 0; i < max_neighbors; i++) {
+		if (cur_tile->neighbors[i] != NULL) {
+			SearchNode *tmp = malloc(sizeof(SearchNode));
+			tmp->tile = cur_tile->neighbors[i];
+			tmp->visited = 1;
+			cur_node->next = tmp;
+			cur_node = tmp;
+		}
+	}
+
+	cur_node = &start;
+	while (cur_node != NULL) {
+		Point p = oned_to_twod(cur_node->tile->tile_id, map_width);
+		printf("(%u, %u) | %u\n", p.x, p.y, cur_node->visited);
+		cur_node = cur_node->next;
+	}
+
+	return 0;
 
 	u8 running = 1;
     while (running) {
