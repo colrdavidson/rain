@@ -84,6 +84,15 @@ void lreverse(PathNode **head) {
 	*head = prev;
 }
 
+void free_path(PathNode *head) {
+	PathNode *tmp;
+	while (head != NULL) {
+		tmp = head;
+		head = head->next;
+		free(tmp);
+	}
+}
+
 void lprint(PathNode *head) {
 	PathNode *tmp = head;
 	while (tmp != NULL) {

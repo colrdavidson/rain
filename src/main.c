@@ -120,10 +120,9 @@ int main() {
 		fgets(line, 256, fp);
 	}
 
-    u32 player_x = 0;
-	u32 player_y = 0;
-	u32 player_z = 1;
-	map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 7;
+
+	Point player = new_point(0, 0, 1);
+	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 7;
 
 	i32 camera_x = -35;
 	i32 camera_y = screen_height / 2;
@@ -173,15 +172,9 @@ int main() {
 		}
 	}
 
-    Point start = new_point(0, 10, 1);
-	Point goal = new_point(19, 10, 1);
-	PathNode *path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
-
-	PathNode *tmp = path;
-	while (tmp != NULL) {
-		map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 4;
-		tmp = tmp->next;
-	}
+	Point start;
+	Point goal;
+	PathNode *path = NULL;
 
 	u8 running = 1;
     while (running) {
@@ -238,14 +231,41 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 					printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 
-					if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-						map[threed_to_oned(player_x, player_y, player_z, map_width, map_height)] = 0;
+					/*if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+						map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
 						map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
-						player_x = p.x;
-						player_y = p.y;
-						player_z = p.z + 1;
+						player.x = p.x;
+						player.y = p.y;
+						player.z = p.z + 1;
 						memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+					}*/
+
+					if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+						start = player;
+						start.x += 1;
+						goal = p;
+						goal.z += 1;
+
+						printf("(%u, %u, %u)\n", start.x, start.y, start.z);
+						printf("(%u, %u, %u)\n", goal.x, goal.y, goal.z);
+
+                        if (path != NULL) {
+							PathNode *tmp = path;
+							while (tmp != NULL) {
+								map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
+								tmp = tmp->next;
+							}
+							free(path);
+						}
+
+						path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
+						PathNode *tmp = path;
+						while (tmp != NULL) {
+							map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 4;
+							tmp = tmp->next;
+						}
 					}
+
 				} break;
 				case SDL_QUIT: {
 					running = 0;
