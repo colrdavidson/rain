@@ -4,19 +4,7 @@
 #include "common.h"
 #include "tga.h"
 #include "point.h"
-
-typedef struct GridNode {
-	u32 tile_id;
-	struct GridNode **neighbors;
-} GridNode;
-
-
-typedef struct SearchNode {
-	u8 visited;
-	GridNode *tile;
-	struct SearchNode *next;
-} SearchNode;
-
+#include "path.h"
 
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
@@ -46,7 +34,6 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 
 	SDL_FreeSurface(scaled);
 }
-
 
 int main() {
 	u16 original_screen_width = 640;
@@ -161,6 +148,11 @@ int main() {
 
 	for (u32 y = 0; y < map_height; y++) {
     	for (u32 x = 0; x < map_width; x++) {
+			node_map[twod_to_oned(x, y, map_width)].neighbors[SOUTH] = NULL;
+			node_map[twod_to_oned(x, y, map_width)].neighbors[EAST] = NULL;
+			node_map[twod_to_oned(x, y, map_width)].neighbors[WEST] = NULL;
+			node_map[twod_to_oned(x, y, map_width)].neighbors[NORTH] = NULL;
+
 			if (y < map_height - 1) {
 				node_map[twod_to_oned(x, y, map_width)].neighbors[SOUTH] = &node_map[twod_to_oned(x, y + 1, map_width)];
 			}
@@ -188,6 +180,7 @@ int main() {
 			SearchNode *tmp = malloc(sizeof(SearchNode));
 			tmp->tile = cur_tile->neighbors[i];
 			tmp->visited = 1;
+			tmp->next = NULL;
 			cur_node->next = tmp;
 			cur_node = tmp;
 		}
