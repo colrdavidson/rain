@@ -286,16 +286,6 @@ int main() {
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-							map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
-							map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
-							player.x = p.x;
-							player.y = p.y;
-							player.z = p.z + 1;
-
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-						}
-					} else {
-						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
 							start = player;
 							goal = p;
 							goal.z += 1;
