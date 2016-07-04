@@ -143,7 +143,7 @@ int main() {
 	f32 camera_vel_y = 0.0;
 	f32 camera_imp_x = 0.0;
 	f32 camera_imp_y = 0.0;
-	f32 camera_speed = 10.0;
+	f32 camera_speed = 2.0;
 	if (screen_width != original_screen_width) {
 		camera_pos_x = -10;
 		camera_pos_y = screen_height / 4;
@@ -260,57 +260,54 @@ int main() {
 		camera_imp_x = 0.0;
 		camera_imp_y = 0.0;
 		SDL_Event event;
+
+		SDL_PumpEvents();
+		const u8 *state = SDL_GetKeyboardState(NULL);
+		u8 triggered = 0;
+		if (state[SDL_SCANCODE_UP]) {
+			camera_imp_y += camera_speed;
+			triggered = 1;
+		}
+		if (state[SDL_SCANCODE_DOWN]) {
+			camera_imp_y -= camera_speed;
+			triggered = 1;
+		}
+		if (state[SDL_SCANCODE_LEFT]) {
+			camera_imp_x += camera_speed;
+			triggered = 1;
+		}
+		if (state[SDL_SCANCODE_RIGHT]) {
+			camera_imp_x -= camera_speed;
+			triggered = 1;
+		}
+
+
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 				case SDL_KEYDOWN: {
 					switch (event.key.keysym.sym) {
 						case SDLK_e: {
 							direction = cycle_right(direction);
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
+							triggered = 1;
 						} break;
 						case SDLK_q: {
 							direction = cycle_left(direction);
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
+							triggered = 1;
 						} break;
 						case SDLK_1: {
 							scale = 1.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
+							triggered = 1;
 						} break;
 						case SDLK_2: {
 							scale = 2.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
+							triggered = 1;
 						} break;
 						case SDLK_3: {
 							scale = 3.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
-						} break;
-		    			case SDLK_UP: {
-							camera_imp_y += camera_speed;
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
-						} break;
-						case SDLK_DOWN: {
-							camera_imp_y -= camera_speed;
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
-						} break;
-						case SDLK_LEFT: {
-							camera_imp_x += camera_speed;
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
-						} break;
-						case SDLK_RIGHT: {
-							camera_imp_x -= camera_speed;
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-							redraw_buffer = 1;
+							triggered = 1;
 						} break;
 					}
 				} break;
@@ -343,11 +340,17 @@ int main() {
 			}
 		}
 
+		if (triggered) {
+			memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+			redraw_buffer = 1;
+			triggered = 0;
+		}
+
 		f32 new_time = (f32)SDL_GetTicks() / 60.0;
 		f32 dt = new_time - current_time;
 		current_time = new_time;
 
-		f32 friction = -0.4;
+		f32 friction = -0.2;
 		f32 x_acc = friction * camera_vel_x + camera_imp_x;
 		f32 y_acc = friction * camera_vel_y + camera_imp_y;
 		camera_pos_x = (0.5 * x_acc * dt * dt) + camera_vel_x * dt + camera_pos_x;
