@@ -29,12 +29,12 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 	}
 }
 
-void rescale_surfaces(SDL_Surface **surface_map, u32 num_surfaces, f32 scale) {
+void rescale_surfaces(SDL_Surface **surface_map, SDL_Surface **scaled_surface_map, u32 num_surfaces, i32 tile_width, i32 tile_height, f32 scale) {
 	for (u32 i = 1; i < num_surfaces; i++) {
-		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (f32)surface_map[i]->w * scale, (f32)surface_map[i]->h * scale, surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
+		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (u32)((f32)tile_width * scale), (u32)((f32)tile_height * scale), surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
 		SDL_BlitScaled(surface_map[i], NULL, scaled, NULL);
-		free(surface_map[i]);
-		surface_map[i] = scaled;
+		free(scaled_surface_map[i]);
+		scaled_surface_map[i] = scaled;
 	}
 }
 
@@ -75,6 +75,7 @@ int main() {
 	fgets(line, 256, fp);
 	u32 tile_entries = atoi(line) + 2;
 	SDL_Surface *surface_map[tile_entries];
+	SDL_Surface *scaled_surface_map[tile_entries];
 	SDL_Texture *texture_map[tile_entries];
 
 	i32 player_idx = tile_entries - 1;
@@ -98,6 +99,16 @@ int main() {
 	surface_map[player_idx] = SDL_LoadBMP("assets/cylinder.bmp");
 	SDL_SetColorKey(surface_map[player_idx], SDL_TRUE, SDL_MapRGB(surface_map[player_idx]->format, 0, 0, 0));
 	texture_map[player_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[player_idx]);
+
+	i32 tile_width, tile_height;
+	SDL_QueryTexture(texture_map[1], NULL, NULL, &tile_width, &tile_height);
+	f32 scale = 1.0;
+
+	for (u32 i = 1; i < tile_entries; i++) {
+		SDL_Surface *surface = SDL_CreateRGBSurface(0, (u32)tile_width, (u32)tile_height, surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
+		SDL_BlitScaled(surface_map[i], NULL, surface, NULL);
+		scaled_surface_map[i] = surface;
+	}
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
@@ -125,6 +136,7 @@ int main() {
 	Point player = new_point(0, 0, 1);
 	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = player_idx;
 
+
 	f32 camera_pos_x = -35;
 	f32 camera_pos_y = screen_height / 2;
 	f32 camera_vel_x = 0.0;
@@ -132,12 +144,11 @@ int main() {
 	f32 camera_imp_x = 0.0;
 	f32 camera_imp_y = 0.0;
 	f32 camera_speed = 10.0;
-	f32 scale = 1.0;
 	if (screen_width != original_screen_width) {
 		camera_pos_x = -10;
 		camera_pos_y = screen_height / 4;
 		scale = 2.0;
-		rescale_surfaces(surface_map, tile_entries, scale);
+		rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
 	}
 
 	Direction direction = NORTH;
@@ -243,8 +254,6 @@ int main() {
 
     u8 redraw_buffer = 1;
 
-	i32 tile_width, tile_height;
-	SDL_QueryTexture(texture_map[1], NULL, NULL, &tile_width, &tile_height);
 
 	u8 running = 1;
     while (running) {
@@ -267,20 +276,19 @@ int main() {
 						} break;
 						case SDLK_1: {
 							scale = 1.0;
-
-							rescale_surfaces(surface_map, tile_entries, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_2: {
 							scale = 2.0;
-							rescale_surfaces(surface_map, tile_entries, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_3: {
 							scale = 3.0;
-							rescale_surfaces(surface_map, tile_entries, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
@@ -448,7 +456,7 @@ int main() {
 
 					if (tile_id != 0) {
 						if (redraw_buffer) {
-							blit_surface_to_click_buffer(surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 						}
 						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
 					}
