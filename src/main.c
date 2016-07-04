@@ -338,139 +338,143 @@ int main() {
 
 		t += frame_time;
 
-		SDL_RenderClear(renderer);
+		if (redraw_buffer) {
+			SDL_RenderClear(renderer);
 
-		i32 box_width, box_height;
-		SDL_QueryTexture(wall_tex, NULL, NULL, &box_width, &box_height);
+			i32 box_width, box_height;
+			SDL_QueryTexture(wall_tex, NULL, NULL, &box_width, &box_height);
 
-		SDL_Rect dest;
-		dest.w = box_width * scale;
-		dest.h = box_height * scale;
+			SDL_Rect dest;
+			dest.w = box_width * scale;
+			dest.h = box_height * scale;
 
-		for (u32 z = 0; z < map_depth; z++) {
-			for (u32 x = 0; x < map_width; x++) {
-				for (u32 y = 0; y < map_height; y++) {
+			for (u32 z = 0; z < map_depth; z++) {
+				for (u32 x = 0; x < map_width; x++) {
+					for (u32 y = 0; y < map_height; y++) {
 
-					u32 adj_y;
-					u32 adj_x;
+						u32 adj_y;
+						u32 adj_x;
 
-					u32 cam_adj_x;
-					u32 cam_adj_y;
+						u32 cam_adj_x;
+						u32 cam_adj_y;
 
-					switch (direction) {
-						case NORTH: {
-							adj_y = y;
-							adj_x = x;
+						switch (direction) {
+							case NORTH: {
+								adj_y = y;
+								adj_x = x;
 
-							cam_adj_x = x;
-							cam_adj_y = map_height - y;
+								cam_adj_x = x;
+								cam_adj_y = map_height - y;
 
-							dir_door_bmp = north_door_bmp;
-							dir_door_tex = north_door_tex;
-						} break;
-						case EAST: {
-							adj_y = map_height - y - 1;
-							adj_x = x;
+								dir_door_bmp = north_door_bmp;
+								dir_door_tex = north_door_tex;
+							} break;
+							case EAST: {
+								adj_y = map_height - y - 1;
+								adj_x = x;
 
-							cam_adj_x = y;
-							cam_adj_y = map_width - x;
-						} break;
-						case SOUTH: {
-							adj_y = map_height - y - 1;
-							adj_x = map_width - x - 1;
+								cam_adj_x = y;
+								cam_adj_y = map_width - x;
+							} break;
+							case SOUTH: {
+								adj_y = map_height - y - 1;
+								adj_x = map_width - x - 1;
 
-							cam_adj_x = x;
-							cam_adj_y = map_height - y;
-						} break;
-						case WEST: {
-							adj_x = map_width - x - 1;
-							adj_y = y;
+								cam_adj_x = x;
+								cam_adj_y = map_height - y;
+							} break;
+							case WEST: {
+								adj_x = map_width - x - 1;
+								adj_y = y;
 
-							cam_adj_x = y;
-							cam_adj_y = map_width - x;
+								cam_adj_x = y;
+								cam_adj_y = map_width - x;
 
-							dir_door_bmp = west_door_bmp;
-							dir_door_tex = west_door_tex;
-						} break;
-						default: {
-							puts("direction wtf?");
-							adj_y = y;
-							adj_x = x;
+								dir_door_bmp = west_door_bmp;
+								dir_door_tex = west_door_tex;
+							} break;
+							default: {
+								puts("direction wtf?");
+								adj_y = y;
+								adj_x = x;
 
-							cam_adj_x = x;
-							cam_adj_y = map_height - y;
+								cam_adj_x = x;
+								cam_adj_y = map_height - y;
 
-							dir_door_bmp = north_door_bmp;
-							dir_door_tex = north_door_tex;
-						} break;
-					}
+								dir_door_bmp = north_door_bmp;
+								dir_door_tex = north_door_tex;
+							} break;
+						}
 
-					dest.x = (((cam_adj_x + cam_adj_y) * 16) + camera_x) * scale;
-					dest.y = (((cam_adj_x - cam_adj_y) * 8) - (16 * z) + camera_y) * scale;
+						dest.x = (((cam_adj_x + cam_adj_y) * 16) + camera_x) * scale;
+						dest.y = (((cam_adj_x - cam_adj_y) * 8) - (16 * z) + camera_y) * scale;
 
-					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
-					switch (tile_id) {
-						case 1: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, wall_tex, NULL, &dest);
-						} break;
-						case 2: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, grass_tex, NULL, &dest);
-						} break;
-						case 3: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, brick_tex, NULL, &dest);
-						} break;
-						case 4: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, wood_wall_tex, NULL, &dest);
-						} break;
-						case 5: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(dir_door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, dir_door_tex, NULL, &dest);
-						} break;
-						case 6: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, roof_tex, NULL, &dest);
-						} break;
-						case 7: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(cylinder_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, cylinder_tex, NULL, &dest);
-						} break;
-						case 8: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, white_brick_tex, NULL, &dest);
-						} break;
-						case 9: {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(wood_ladder_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, wood_ladder_wall_tex, NULL, &dest);
-						} break;
+						u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
+						switch (tile_id) {
+							case 1: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, wall_tex, NULL, &dest);
+							} break;
+							case 2: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, grass_tex, NULL, &dest);
+							} break;
+							case 3: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, brick_tex, NULL, &dest);
+							} break;
+							case 4: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, wood_wall_tex, NULL, &dest);
+							} break;
+							case 5: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(dir_door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, dir_door_tex, NULL, &dest);
+							} break;
+							case 6: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, roof_tex, NULL, &dest);
+							} break;
+							case 7: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(cylinder_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, cylinder_tex, NULL, &dest);
+							} break;
+							case 8: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, white_brick_tex, NULL, &dest);
+							} break;
+							case 9: {
+								if (redraw_buffer) {
+									blit_surface_to_click_buffer(wood_ladder_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+								}
+								SDL_RenderCopy(renderer, wood_ladder_wall_tex, NULL, &dest);
+							} break;
+						}
 					}
 				}
 			}
-		}
 
-		redraw_buffer = 0;
-		SDL_RenderPresent(renderer);
+			redraw_buffer = 0;
+			SDL_RenderPresent(renderer);
+		} else {
+			SDL_Delay(50);
+		}
 	}
 
 	Image img;
