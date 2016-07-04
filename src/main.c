@@ -130,6 +130,11 @@ int main() {
 	i32 camera_x = -35;
 	i32 camera_y = screen_height / 2;
 	u32 scale = 1;
+	if (screen_width != original_screen_width) {
+		camera_x = -10;
+		camera_y = screen_height / 4;
+		scale = 2;
+	}
 
 	Direction direction = NORTH;
 	SDL_Surface *dir_door_bmp = north_door_bmp;
@@ -194,12 +199,25 @@ int main() {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map_width, map_height)];
 				}
 
-				if (z < map_depth - 2 && map[threed_to_oned(x, y, z + 1, map_width, map_height)] == 9) {
-					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
-					node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
+				if (z > 0 && map[threed_to_oned(x, y, z - 1, map_width, map_height)] == 0) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[UP] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[DOWN] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = NULL;
+				}
 
+				if (z < map_depth - 2 && map[threed_to_oned(x, y, z + 1, map_width, map_height)] == 9) {
 					node_map[threed_to_oned(x, y - 1, z, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
 					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)];
+
+					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
+					node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
 				}
 			}
 		}
@@ -262,16 +280,32 @@ int main() {
 					mouse_y = ((float)screen_height / (float)original_screen_height) * mouse_y;
 
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
-					//printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+							map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
+							map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
+							player.x = p.x;
+							player.y = p.y;
+							player.z = p.z + 1;
+
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+
+							if (path != NULL) {
+								PathNode *tmp = path;
+								while (tmp != NULL) {
+									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
+										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
+									}
+									tmp = tmp->next;
+								}
+							}
+						}
+					} else {
 						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
 							start = player;
 							goal = p;
 							goal.z += 1;
-
-							//printf("(%u, %u, %u)\n", start.x, start.y, start.z);
-							//printf("(%u, %u, %u)\n", goal.x, goal.y, goal.z);
 
 							if (path != NULL) {
 								PathNode *tmp = path;
@@ -291,26 +325,6 @@ int main() {
 									map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 8;
 								}
 								tmp = tmp->next;
-							}
-						}
-					} else {
-						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-							map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
-							map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
-							player.x = p.x;
-							player.y = p.y;
-							player.z = p.z + 1;
-
-							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-
-							if (path != NULL) {
-								PathNode *tmp = path;
-								while (tmp != NULL) {
-									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
-									}
-									tmp = tmp->next;
-								}
 							}
 						}
 					}
