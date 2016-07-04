@@ -139,6 +139,10 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 		lappend(&path_head, oned_to_threed(tmp->tile_pos, map_width, map_height));
 	}
 
+	while (head != NULL) {
+		qpop(&head);
+	}
+	free(from);
 	return path_head;
 }
 
