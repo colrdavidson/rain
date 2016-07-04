@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "common.h"
 #include "point.h"
 
@@ -105,6 +106,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	QueueNode *head = NULL;
 	QueueNode *tail = NULL;
 	GridNode **from = malloc(map_width * map_height * map_depth * sizeof(GridNode));
+	memset(from, 0, map_width * map_height * map_depth * sizeof(GridNode));
 
 	qpush(&head, &tail, &node_map[threed_to_oned(start.x, start.y, start.z, map_width, map_height)]);
 	from[threed_to_oned(start.x, start.y, start.z, map_width, map_height)] = NULL;
