@@ -230,6 +230,8 @@ int main() {
 	float current_time = (float)SDL_GetTicks() / 60.0;
 	float t = 0.0;
 
+    u8 redraw_buffer = 1;
+
 	u8 running = 1;
     while (running) {
 		SDL_Event event;
@@ -240,38 +242,47 @@ int main() {
 						case SDLK_e: {
 							direction = cycle_right(direction);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_q: {
 							direction = cycle_left(direction);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_1: {
 							scale = 1;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_2: {
 							scale = 2;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_3: {
 							scale = 3;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_UP: {
 							camera_y -= 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_DOWN: {
 							camera_y += 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_LEFT: {
 							camera_x -= 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 						case SDLK_RIGHT: {
 							camera_x += 10;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+							redraw_buffer = 1;
 						} break;
 					}
 				} break;
@@ -315,6 +326,8 @@ int main() {
 				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 7;
 				cur_pos = cur_pos->next;
 				t = 0.0;
+				memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+				redraw_buffer = 1;
 			}
 		} else {
 			if (path != NULL) {
@@ -398,39 +411,57 @@ int main() {
 					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
 					switch (tile_id) {
 						case 1: {
-							blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, wall_tex, NULL, &dest);
 						} break;
 						case 2: {
-							blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(grass_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, grass_tex, NULL, &dest);
 						} break;
 						case 3: {
-							blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, brick_tex, NULL, &dest);
 						} break;
 						case 4: {
-							blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(wood_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, wood_wall_tex, NULL, &dest);
 						} break;
 						case 5: {
-							blit_surface_to_click_buffer(dir_door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(dir_door_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, dir_door_tex, NULL, &dest);
 						} break;
 						case 6: {
-							blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(roof_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, roof_tex, NULL, &dest);
 						} break;
 						case 7: {
-							blit_surface_to_click_buffer(cylinder_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(cylinder_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, cylinder_tex, NULL, &dest);
 						} break;
 						case 8: {
-							blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, white_brick_tex, NULL, &dest);
 						} break;
 						case 9: {
-							blit_surface_to_click_buffer(wood_ladder_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(wood_ladder_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							}
 							SDL_RenderCopy(renderer, wood_ladder_wall_tex, NULL, &dest);
 						} break;
 					}
@@ -438,6 +469,7 @@ int main() {
 			}
 		}
 
+		redraw_buffer = 0;
 		SDL_RenderPresent(renderer);
 	}
 
