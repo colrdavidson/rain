@@ -60,6 +60,7 @@ int main() {
 	SDL_Surface *brick_bmp = SDL_LoadBMP("assets/brick.bmp");
 	SDL_Surface *grass_bmp = SDL_LoadBMP("assets/grass.bmp");
 	SDL_Surface *wood_wall_bmp = SDL_LoadBMP("assets/wood_wall.bmp");
+	SDL_Surface *wood_ladder_wall_bmp = SDL_LoadBMP("assets/wood_ladder_wall.bmp");
 	SDL_Surface *north_door_bmp = SDL_LoadBMP("assets/north_door.bmp");
 	SDL_Surface *west_door_bmp = SDL_LoadBMP("assets/west_door.bmp");
 	SDL_Surface *roof_bmp = SDL_LoadBMP("assets/roof.bmp");
@@ -70,6 +71,7 @@ int main() {
 	SDL_SetColorKey(brick_bmp, SDL_TRUE, SDL_MapRGB(brick_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(grass_bmp, SDL_TRUE, SDL_MapRGB(grass_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(wood_wall_bmp, SDL_TRUE, SDL_MapRGB(wood_wall_bmp->format, 0, 0, 0));
+	SDL_SetColorKey(wood_ladder_wall_bmp, SDL_TRUE, SDL_MapRGB(wood_ladder_wall_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(north_door_bmp, SDL_TRUE, SDL_MapRGB(north_door_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(west_door_bmp, SDL_TRUE, SDL_MapRGB(west_door_bmp->format, 0, 0, 0));
 	SDL_SetColorKey(roof_bmp, SDL_TRUE, SDL_MapRGB(roof_bmp->format, 0, 0, 0));
@@ -81,6 +83,7 @@ int main() {
 	SDL_Texture *white_brick_tex = SDL_CreateTextureFromSurface(renderer, white_brick_bmp);
 	SDL_Texture *grass_tex = SDL_CreateTextureFromSurface(renderer, grass_bmp);
 	SDL_Texture *wood_wall_tex = SDL_CreateTextureFromSurface(renderer, wood_wall_bmp);
+	SDL_Texture *wood_ladder_wall_tex = SDL_CreateTextureFromSurface(renderer, wood_ladder_wall_bmp);
 	SDL_Texture *north_door_tex = SDL_CreateTextureFromSurface(renderer, north_door_bmp);
 	SDL_Texture *west_door_tex = SDL_CreateTextureFromSurface(renderer, west_door_bmp);
 	SDL_Texture *roof_tex = SDL_CreateTextureFromSurface(renderer, roof_bmp);
@@ -121,7 +124,7 @@ int main() {
 	}
 
 
-	Point player = new_point(5, 3, 1);
+	Point player = new_point(10, 10, 4);
 	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 7;
 
 	i32 camera_x = -35;
@@ -189,6 +192,14 @@ int main() {
 
 				if (x > 0 && y < map_height - 1) {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map_width, map_height)];
+				}
+
+				if (z < map_depth - 2 && map[threed_to_oned(x, y, z + 1, map_width, map_height)] == 9) {
+					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
+					node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
+
+					node_map[threed_to_oned(x, y - 1, z, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
+					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)];
 				}
 			}
 		}
@@ -401,6 +412,10 @@ int main() {
 						case 8: {
 							blit_surface_to_click_buffer(white_brick_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 							SDL_RenderCopy(renderer, white_brick_tex, NULL, &dest);
+						} break;
+						case 9: {
+							blit_surface_to_click_buffer(wood_ladder_wall_bmp, &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							SDL_RenderCopy(renderer, wood_ladder_wall_tex, NULL, &dest);
 						} break;
 					}
 				}

@@ -40,13 +40,14 @@ void qpush(QueueNode **head, QueueNode **tail, GridNode *tile) {
 	}
 }
 
-GridNode *qpop(QueueNode **head) {
+GridNode *qpop(QueueNode **head, QueueNode **tail) {
 	if (*head == NULL) {
 		printf("empty queue!\n");
 		return NULL;
 	}
-	GridNode *tile = (*head)->tile;
+
 	QueueNode *tmp = (*head)->next;
+	GridNode *tile = (*head)->tile;
 
 	free(*head);
 	*head = tmp;
@@ -112,7 +113,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	from[threed_to_oned(start.x, start.y, start.z, map_width, map_height)] = NULL;
 
 	while (head != NULL && tail != NULL) {
-		GridNode *cur_tile = qpop(&head);
+		GridNode *cur_tile = qpop(&head, &tail);
 
 		if (cur_tile->tile_pos == threed_to_oned(goal.x, goal.y, goal.z, map_width, map_height)) {
 			break;
@@ -133,6 +134,10 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
     while (point_eq(path_head->p, start)) {
 		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
         if (tmp == NULL) {
+			while (head != NULL) {
+				qpop(&head, &tail);
+			}
+			free(from);
 			return NULL;
 		}
 
@@ -140,7 +145,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	}
 
 	while (head != NULL) {
-		qpop(&head);
+		qpop(&head, &tail);
 	}
 	free(from);
 	return path_head;
