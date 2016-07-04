@@ -56,7 +56,7 @@ int main() {
 	u32 *click_map = malloc(screen_width * screen_height * sizeof(u32));
 	memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 
-	FILE *fp = fopen("assets/city_map", "r");
+	FILE *fp = fopen("assets/house_map", "r");
 	char *line = malloc(256);
 
 	fgets(line, 256, fp);
@@ -122,13 +122,18 @@ int main() {
 	Point player = new_point(0, 0, 1);
 	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = player_idx;
 
-	i32 camera_x = -35;
-	i32 camera_y = screen_height / 2;
-	u32 scale = 1;
+	f32 camera_pos_x = -35;
+	f32 camera_pos_y = screen_height / 2;
+	f32 camera_vel_x = 0.0;
+	f32 camera_vel_y = 0.0;
+	f32 camera_imp_x = 0.0;
+	f32 camera_imp_y = 0.0;
+	f32 camera_speed = 10.0;
+	f32 scale = 1.0;
 	if (screen_width != original_screen_width) {
-		camera_x = -10;
-		camera_y = screen_height / 4;
-		scale = 2;
+		camera_pos_x = -10;
+		camera_pos_y = screen_height / 4;
+		scale = 2.0;
 	}
 
 	Direction direction = NORTH;
@@ -229,13 +234,15 @@ int main() {
 	Point goal;
 	PathNode *path = NULL;
 	PathNode *cur_pos = NULL;
-	float current_time = (float)SDL_GetTicks() / 60.0;
-	float t = 0.0;
+	f32 current_time = (f32)SDL_GetTicks() / 60.0;
+	f32 t = 0.0;
 
     u8 redraw_buffer = 1;
 
 	u8 running = 1;
     while (running) {
+		camera_imp_x = 0.0;
+		camera_imp_y = 0.0;
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -252,37 +259,37 @@ int main() {
 							redraw_buffer = 1;
 						} break;
 						case SDLK_1: {
-							scale = 1;
+							scale = 1.0;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_2: {
-							scale = 2;
+							scale = 2.0;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_3: {
-							scale = 3;
+							scale = 3.0;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
-						case SDLK_UP: {
-							camera_y -= 10;
+		    			case SDLK_UP: {
+							camera_imp_y += camera_speed;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_DOWN: {
-							camera_y += 10;
+							camera_imp_y -= camera_speed;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_LEFT: {
-							camera_x -= 10;
+							camera_imp_x += camera_speed;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_RIGHT: {
-							camera_x += 10;
+							camera_imp_x -= camera_speed;
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
@@ -292,8 +299,8 @@ int main() {
 					i32 mouse_x, mouse_y;
 					u32 buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
-					mouse_x = ((float)screen_width / (float)original_screen_width) * mouse_x;
-					mouse_y = ((float)screen_height / (float)original_screen_height) * mouse_y;
+					mouse_x = ((f32)screen_width / (f32)original_screen_width) * mouse_x;
+					mouse_y = ((f32)screen_height / (f32)original_screen_height) * mouse_y;
 
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 
@@ -317,9 +324,17 @@ int main() {
 			}
 		}
 
-		float new_time = (float)SDL_GetTicks() / 60.0;
-		float frame_time = new_time - current_time;
+		f32 new_time = (f32)SDL_GetTicks() / 60.0;
+		f32 dt = new_time - current_time;
 		current_time = new_time;
+
+		f32 friction = -0.4;
+		f32 x_acc = friction * camera_vel_x + camera_imp_x;
+		f32 y_acc = friction * camera_vel_y + camera_imp_y;
+		camera_pos_x = (0.5 * x_acc * dt * dt) + camera_vel_x * dt + camera_pos_x;
+		camera_pos_y = (0.5 * y_acc * dt * dt) + camera_vel_y * dt + camera_pos_y;
+		camera_vel_x = (x_acc * dt) + camera_vel_x;
+		camera_vel_y = (y_acc * dt) + camera_vel_y;
 
 		if (cur_pos != NULL) {
 			if (t > 3.0) {
@@ -338,114 +353,110 @@ int main() {
 			}
 		}
 
-		t += frame_time;
+		t += dt;
 
 		/*
 		 * The directional tile system needs to be managed in the dynamic loader
 		 */
 
-		if (redraw_buffer) {
-			SDL_RenderClear(renderer);
+		SDL_RenderClear(renderer);
 
-			i32 box_width, box_height;
-			SDL_QueryTexture(texture_map[1], NULL, NULL, &box_width, &box_height);
+		i32 box_width, box_height;
+		SDL_QueryTexture(texture_map[1], NULL, NULL, &box_width, &box_height);
 
-			SDL_Rect dest;
-			dest.w = box_width * scale;
-			dest.h = box_height * scale;
+		SDL_Rect dest;
+		dest.w = (i32)((f32)box_width * scale);
+		dest.h = (i32)((f32)box_height * scale);
 
-			for (u32 z = 0; z < map_depth; z++) {
-				for (u32 x = 0; x < map_width; x++) {
-					for (u32 y = 0; y < map_height; y++) {
+		for (u32 z = 0; z < map_depth; z++) {
+			for (u32 x = 0; x < map_width; x++) {
+				for (u32 y = 0; y < map_height; y++) {
 
-						u32 adj_y;
-						u32 adj_x;
+					f32 adj_y;
+					f32 adj_x;
 
-						u32 cam_adj_x;
-						u32 cam_adj_y;
+					f32 cam_adj_x;
+					f32 cam_adj_y;
 
-						switch (direction) {
-							case NORTH: {
-								adj_y = y;
-								adj_x = x;
+					switch (direction) {
+						case NORTH: {
+							adj_y = y;
+							adj_x = x;
 
-								cam_adj_x = x;
-								cam_adj_y = map_height - y;
+							cam_adj_x = x;
+							cam_adj_y = map_height - y;
 
-								/*
-								dir_door_bmp = north_door_bmp;
-								dir_door_tex = north_door_tex;
-								*/
-							} break;
-							case EAST: {
-								adj_y = map_height - y - 1;
-								adj_x = x;
+							/*
+							dir_door_bmp = north_door_bmp;
+							dir_door_tex = north_door_tex;
+							*/
+						} break;
+						case EAST: {
+							adj_y = map_height - y - 1;
+							adj_x = x;
 
-								cam_adj_x = y;
-								cam_adj_y = map_width - x;
-							} break;
-							case SOUTH: {
-								adj_y = map_height - y - 1;
-								adj_x = map_width - x - 1;
+							cam_adj_x = y;
+							cam_adj_y = map_width - x;
+						} break;
+						case SOUTH: {
+							adj_y = map_height - y - 1;
+							adj_x = map_width - x - 1;
 
-								cam_adj_x = x;
-								cam_adj_y = map_height - y;
-							} break;
-							case WEST: {
-								adj_x = map_width - x - 1;
-								adj_y = y;
+							cam_adj_x = x;
+							cam_adj_y = map_height - y;
+						} break;
+						case WEST: {
+							adj_x = map_width - x - 1;
+							adj_y = y;
 
-								cam_adj_x = y;
-								cam_adj_y = map_width - x;
+							cam_adj_x = y;
+							cam_adj_y = map_width - x;
 
-								/*
-								dir_door_bmp = west_door_bmp;
-								dir_door_tex = west_door_tex;
-								*/
-							} break;
-							default: {
-								puts("direction wtf?");
-								adj_y = y;
-								adj_x = x;
+							/*
+							dir_door_bmp = west_door_bmp;
+							dir_door_tex = west_door_tex;
+							*/
+						} break;
+						default: {
+							puts("direction wtf?");
+							adj_y = y;
+							adj_x = x;
 
-								cam_adj_x = x;
-								cam_adj_y = map_height - y;
+							cam_adj_x = x;
+							cam_adj_y = map_height - y;
 
-								/*
-								dir_door_bmp = north_door_bmp;
-								dir_door_tex = north_door_tex;
-								*/
-							} break;
+							/*
+							dir_door_bmp = north_door_bmp;
+							dir_door_tex = north_door_tex;
+							*/
+						} break;
+					}
+
+					dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
+					dest.y = (((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale;
+
+					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
+
+					if (tile_id != 0) {
+						if (redraw_buffer) {
+							blit_surface_to_click_buffer(surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 						}
-
-						dest.x = (((cam_adj_x + cam_adj_y) * 16) + camera_x) * scale;
-						dest.y = (((cam_adj_x - cam_adj_y) * 8) - (16 * z) + camera_y) * scale;
-
-						u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
-
-						if (tile_id != 0) {
-							if (redraw_buffer) {
-								blit_surface_to_click_buffer(surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-							}
-							SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
-						}
+						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
 					}
 				}
 			}
-
-			redraw_buffer = 0;
-			SDL_RenderPresent(renderer);
-		} else {
-			SDL_Delay(50);
 		}
+
+		redraw_buffer = 0;
+		SDL_RenderPresent(renderer);
 	}
 
-	Image img;
+	/*Image img;
     img.width = screen_width;
     img.height = screen_height;
     img.bytes_per_pixel = 4;
 	img.data = (Color *)click_map;
-	write_tga("test.tga", &img);
+	write_tga("test.tga", &img);*/
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
