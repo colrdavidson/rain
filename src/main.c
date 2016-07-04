@@ -14,14 +14,10 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 		return;
 	}
 
-	SDL_Surface *scaled = SDL_CreateRGBSurface(0, screen_rel_rect->w, screen_rel_rect->h, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
-
-	SDL_BlitScaled(surface, NULL, scaled, NULL);
-
-	for (i32 i = 0; i < scaled->w * scaled->h; i++) {
-		u32 pixel = ((u8 *)scaled->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)scaled->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)scaled->pixels)[pchunk_ptr];
+	for (i32 i = 0; i < surface->w * surface->h; i++) {
+		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
 		if (pixel != 0) {
-			Point pix_pos = oned_to_twod(i, scaled->w);
+			Point pix_pos = oned_to_twod(i, surface->w);
 			if ((screen_rel_rect->x + pix_pos.x < screen_width) && (screen_rel_rect->y + pix_pos.y < screen_height)) {
 				u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
 				if (click_idx < screen_width * screen_height) {
@@ -31,8 +27,15 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 		}
 		pchunk_ptr += 3;
 	}
+}
 
-	SDL_FreeSurface(scaled);
+void rescale_surfaces(SDL_Surface **surface_map, u32 num_surfaces, f32 scale) {
+	for (u32 i = 1; i < num_surfaces; i++) {
+		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (f32)surface_map[i]->w * scale, (f32)surface_map[i]->h * scale, surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
+		SDL_BlitScaled(surface_map[i], NULL, scaled, NULL);
+		free(surface_map[i]);
+		surface_map[i] = scaled;
+	}
 }
 
 int main() {
@@ -134,6 +137,7 @@ int main() {
 		camera_pos_x = -10;
 		camera_pos_y = screen_height / 4;
 		scale = 2.0;
+		rescale_surfaces(surface_map, tile_entries, scale);
 	}
 
 	Direction direction = NORTH;
@@ -239,6 +243,9 @@ int main() {
 
     u8 redraw_buffer = 1;
 
+	i32 tile_width, tile_height;
+	SDL_QueryTexture(texture_map[1], NULL, NULL, &tile_width, &tile_height);
+
 	u8 running = 1;
     while (running) {
 		camera_imp_x = 0.0;
@@ -260,16 +267,20 @@ int main() {
 						} break;
 						case SDLK_1: {
 							scale = 1.0;
+
+							rescale_surfaces(surface_map, tile_entries, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_2: {
 							scale = 2.0;
+							rescale_surfaces(surface_map, tile_entries, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
 						case SDLK_3: {
 							scale = 3.0;
+							rescale_surfaces(surface_map, tile_entries, scale);
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
 							redraw_buffer = 1;
 						} break;
@@ -361,12 +372,10 @@ int main() {
 
 		SDL_RenderClear(renderer);
 
-		i32 box_width, box_height;
-		SDL_QueryTexture(texture_map[1], NULL, NULL, &box_width, &box_height);
 
 		SDL_Rect dest;
-		dest.w = (i32)((f32)box_width * scale);
-		dest.h = (i32)((f32)box_height * scale);
+		dest.w = (i32)(tile_width * scale);
+		dest.h = (i32)(tile_height * scale);
 
 		for (u32 z = 0; z < map_depth; z++) {
 			for (u32 x = 0; x < map_width; x++) {
@@ -451,12 +460,12 @@ int main() {
 		SDL_RenderPresent(renderer);
 	}
 
-	/*Image img;
+	Image img;
     img.width = screen_width;
     img.height = screen_height;
     img.bytes_per_pixel = 4;
 	img.data = (Color *)click_map;
-	write_tga("test.tga", &img);*/
+	write_tga("test.tga", &img);
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
