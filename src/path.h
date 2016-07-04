@@ -40,7 +40,7 @@ void qpush(QueueNode **head, QueueNode **tail, GridNode *tile) {
 	}
 }
 
-GridNode *qpop(QueueNode **head, QueueNode **tail) {
+GridNode *qpop(QueueNode **head) {
 	if (*head == NULL) {
 		printf("empty queue!\n");
 		return NULL;
@@ -103,7 +103,7 @@ void lprint(PathNode *head) {
 	}
 }
 
-PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 map_depth, u32 max_neighbors) {
+PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 map_depth, u32 max_neighbors, u32 player_idx) {
 	QueueNode *head = NULL;
 	QueueNode *tail = NULL;
 	GridNode **from = malloc(map_width * map_height * map_depth * sizeof(GridNode));
@@ -113,14 +113,14 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	from[threed_to_oned(start.x, start.y, start.z, map_width, map_height)] = NULL;
 
 	while (head != NULL && tail != NULL) {
-		GridNode *cur_tile = qpop(&head, &tail);
+		GridNode *cur_tile = qpop(&head);
 
 		if (cur_tile->tile_pos == threed_to_oned(goal.x, goal.y, goal.z, map_width, map_height)) {
 			break;
 		}
 
 		for (u32 i = 0; i < max_neighbors; i++) {
-			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && (cur_tile->neighbors[i]->tile_type == 0 || cur_tile->neighbors[i]->tile_type == 7)) {
+			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && (cur_tile->neighbors[i]->tile_type == 0 || cur_tile->neighbors[i]->tile_type == player_idx)) {
 				qpush(&head, &tail, cur_tile->neighbors[i]);
 				from[cur_tile->neighbors[i]->tile_pos] = cur_tile;
 			}
@@ -135,7 +135,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
         if (tmp == NULL) {
 			while (head != NULL) {
-				qpop(&head, &tail);
+				qpop(&head);
 			}
 			free(from);
 			return NULL;
@@ -145,7 +145,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	}
 
 	while (head != NULL) {
-		qpop(&head, &tail);
+		qpop(&head);
 	}
 	free(from);
 	return path_head;
