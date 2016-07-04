@@ -256,7 +256,7 @@ int main() {
 				} break;
 				case SDL_MOUSEBUTTONDOWN: {
 					i32 mouse_x, mouse_y;
-					SDL_GetMouseState(&mouse_x, &mouse_y);
+					u32 buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
 					mouse_x = ((float)screen_width / (float)original_screen_width) * mouse_x;
 					mouse_y = ((float)screen_height / (float)original_screen_height) * mouse_y;
@@ -264,41 +264,54 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 					//printf("screen: (%d, %d) | grid: (%u, %u, %u)\n", mouse_x, mouse_y, p.x, p.y, p.z);
 
-					/*if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-						map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
-						map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
-						player.x = p.x;
-						player.y = p.y;
-						player.z = p.z + 1;
-						memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-					}*/
+					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+							start = player;
+							goal = p;
+							goal.z += 1;
 
-					if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-						start = player;
-						goal = p;
-						goal.z += 1;
+							//printf("(%u, %u, %u)\n", start.x, start.y, start.z);
+							//printf("(%u, %u, %u)\n", goal.x, goal.y, goal.z);
 
-						//printf("(%u, %u, %u)\n", start.x, start.y, start.z);
-						//printf("(%u, %u, %u)\n", goal.x, goal.y, goal.z);
+							if (path != NULL) {
+								PathNode *tmp = path;
+								while (tmp != NULL) {
+									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
+										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
+									}
+									tmp = tmp->next;
+								}
+								free(path);
+							}
 
-                        if (path != NULL) {
+							path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
 							PathNode *tmp = path;
 							while (tmp != NULL) {
 								if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-									map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
+									map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 8;
 								}
 								tmp = tmp->next;
 							}
-							free(path);
 						}
+					} else {
+						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+							map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
+							map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] = 7;
+							player.x = p.x;
+							player.y = p.y;
+							player.z = p.z + 1;
 
-						path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
-						PathNode *tmp = path;
-						while (tmp != NULL) {
-							if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-								map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 8;
+							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+
+							if (path != NULL) {
+								PathNode *tmp = path;
+								while (tmp != NULL) {
+									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
+										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
+									}
+									tmp = tmp->next;
+								}
 							}
-							tmp = tmp->next;
 						}
 					}
 
