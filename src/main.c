@@ -121,7 +121,7 @@ int main() {
 	}
 
 
-	Point player = new_point(0, 0, 1);
+	Point player = new_point(5, 3, 1);
 	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 7;
 
 	i32 camera_x = -35;
@@ -133,7 +133,7 @@ int main() {
 	SDL_Texture *dir_door_tex = north_door_tex;
 
 
-	u32 max_neighbors = 4;
+	u32 max_neighbors = 10;
 	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height * map_depth);
 	for (u32 x = 0; x < map_width; x++) {
 		for (u32 y = 0; y < map_height; y++) {
@@ -155,6 +155,12 @@ int main() {
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[UP] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[DOWN] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = NULL;
 
 				if (y < map_height - 1) {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = &node_map[threed_to_oned(x, y + 1, z, map_width, map_height)];
@@ -167,6 +173,22 @@ int main() {
 				}
 				if (y > 0) {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
+				}
+
+				if (x > 0 && y > 0) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = &node_map[threed_to_oned(x - 1, y - 1, z, map_width, map_height)];
+				}
+
+				if (x < map_width - 1 && y > 0) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = &node_map[threed_to_oned(x + 1, y - 1, z, map_width, map_height)];
+				}
+
+				if (x < map_width - 1 && y < map_height - 1) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = &node_map[threed_to_oned(x + 1, y + 1, z, map_width, map_height)];
+				}
+
+				if (x > 0 && y < map_height - 1) {
+					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map_width, map_height)];
 				}
 			}
 		}
@@ -329,6 +351,17 @@ int main() {
 
 							dir_door_bmp = west_door_bmp;
 							dir_door_tex = west_door_tex;
+						} break;
+						default: {
+							puts("direction wtf?");
+							adj_y = y;
+							adj_x = x;
+
+							cam_adj_x = x;
+							cam_adj_y = map_height - y;
+
+							dir_door_bmp = north_door_bmp;
+							dir_door_tex = north_door_tex;
 						} break;
 					}
 

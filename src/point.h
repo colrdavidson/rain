@@ -1,6 +1,7 @@
 #ifndef POINT_H
 #define POINT_H
 
+#include <stdio.h>
 #include "common.h"
 
 typedef struct Point {
@@ -14,6 +15,12 @@ typedef enum Direction {
 	EAST,
 	SOUTH,
 	WEST,
+	NORTHEAST,
+	NORTHWEST,
+	SOUTHEAST,
+	SOUTHWEST,
+	UP,
+	DOWN,
 } Direction;
 
 u32 threed_to_oned(u32 x, u32 y, u32 z, u32 x_max, u32 y_max) {
@@ -58,6 +65,10 @@ Direction cycle_right(Direction dir) {
 		case WEST: {
 			return NORTH;
 		} break;
+		default: {
+			puts("direction wtf?");
+			return NORTH;
+		} break;
 	}
 }
 
@@ -73,6 +84,10 @@ Direction cycle_left(Direction dir) {
 			return EAST;
 		} break;
 		case EAST: {
+			return NORTH;
+		} break;
+		default: {
+			puts("direction wtf?");
 			return NORTH;
 		} break;
 	}
