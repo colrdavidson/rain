@@ -119,7 +119,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 		}
 
 		for (u32 i = 0; i < max_neighbors; i++) {
-			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && cur_tile->neighbors[i]->tile_type == 0) {
+			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && (cur_tile->neighbors[i]->tile_type == 0 || cur_tile->neighbors[i]->tile_type == 7)) {
 				qpush(&head, &tail, cur_tile->neighbors[i]);
 				from[cur_tile->neighbors[i]->tile_pos] = cur_tile;
 			}
