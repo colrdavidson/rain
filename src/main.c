@@ -29,9 +29,9 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 	}
 }
 
-void rescale_surfaces(SDL_Surface **surface_map, SDL_Surface **scaled_surface_map, u32 num_surfaces, i32 tile_width, i32 tile_height, f32 scale) {
+void rescale_surfaces(SDL_Surface **surface_map, SDL_Surface **scaled_surface_map, u32 num_surfaces, f32 scale) {
 	for (u32 i = 1; i < num_surfaces; i++) {
-		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (u32)((f32)tile_width * scale), (u32)((f32)tile_height * scale), surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
+		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (u32)((f32)surface_map[i]->w * scale), (u32)((f32)surface_map[i]->h * scale), surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
 		SDL_BlitScaled(surface_map[i], NULL, scaled, NULL);
 		free(scaled_surface_map[i]);
 		scaled_surface_map[i] = scaled;
@@ -100,11 +100,11 @@ int main() {
 	SDL_SetColorKey(surface_map[player_idx], SDL_TRUE, SDL_MapRGB(surface_map[player_idx]->format, 0, 0, 0));
 	texture_map[player_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[player_idx]);
 
-	i32 tile_width, tile_height;
-	SDL_QueryTexture(texture_map[1], NULL, NULL, &tile_width, &tile_height);
 	f32 scale = 1.0;
 
 	for (u32 i = 1; i < tile_entries; i++) {
+		i32 tile_width, tile_height;
+		SDL_QueryTexture(texture_map[i], NULL, NULL, &tile_width, &tile_height);
 		SDL_Surface *surface = SDL_CreateRGBSurface(0, (u32)tile_width, (u32)tile_height, surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
 		SDL_BlitScaled(surface_map[i], NULL, surface, NULL);
 		scaled_surface_map[i] = surface;
@@ -148,7 +148,7 @@ int main() {
 		camera_pos_x = -10;
 		camera_pos_y = screen_height / 4;
 		scale = 2.0;
-		rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
+		rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 	}
 
 	Direction direction = NORTH;
@@ -296,17 +296,17 @@ int main() {
 						} break;
 						case SDLK_1: {
 							scale = 1.0;
-							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 							triggered = 1;
 						} break;
 						case SDLK_2: {
 							scale = 2.0;
-							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 							triggered = 1;
 						} break;
 						case SDLK_3: {
 							scale = 3.0;
-							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, tile_width, tile_height, scale);
+							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 							triggered = 1;
 						} break;
 					}
@@ -340,11 +340,6 @@ int main() {
 			}
 		}
 
-		if (triggered) {
-			memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-			redraw_buffer = 1;
-			triggered = 0;
-		}
 
 		f32 new_time = (f32)SDL_GetTicks() / 60.0;
 		f32 dt = new_time - current_time;
@@ -365,14 +360,19 @@ int main() {
 				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = player_idx;
 				cur_pos = cur_pos->next;
 				t = 0.0;
-				memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-				redraw_buffer = 1;
+				triggered = 1;
 			}
 		} else {
 			if (path != NULL) {
 				free(path);
 				path = NULL;
 			}
+		}
+
+		if (triggered) {
+			memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+			redraw_buffer = 1;
+			triggered = 0;
 		}
 
 		t += dt;
@@ -382,11 +382,6 @@ int main() {
 		 */
 
 		SDL_RenderClear(renderer);
-
-
-		SDL_Rect dest;
-		dest.w = (i32)(tile_width * scale);
-		dest.h = (i32)(tile_height * scale);
 
 		for (u32 z = 0; z < map_depth; z++) {
 			for (u32 x = 0; x < map_width; x++) {
@@ -452,12 +447,16 @@ int main() {
 						} break;
 					}
 
+					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
+
+					SDL_Rect dest;
 					dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
 					dest.y = (((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale;
 
-					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
-
 					if (tile_id != 0) {
+						dest.w = (i32)((f32)(surface_map[tile_id]->w) * scale);
+						dest.h = (i32)((f32)(surface_map[tile_id]->h) * scale);
+
 						if (redraw_buffer) {
 							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 						}
