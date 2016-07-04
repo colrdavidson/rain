@@ -226,6 +226,9 @@ int main() {
 	Point start;
 	Point goal;
 	PathNode *path = NULL;
+	PathNode *cur_pos = NULL;
+	float current_time = (float)SDL_GetTicks() / 60.0;
+	float t = 0.0;
 
 	u8 running = 1;
     while (running) {
@@ -290,16 +293,6 @@ int main() {
 							player.z = p.z + 1;
 
 							memset(click_map, 0, screen_width * screen_height * sizeof(u32));
-
-							if (path != NULL) {
-								PathNode *tmp = path;
-								while (tmp != NULL) {
-									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
-									}
-									tmp = tmp->next;
-								}
-							}
 						}
 					} else {
 						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
@@ -307,24 +300,9 @@ int main() {
 							goal = p;
 							goal.z += 1;
 
-							if (path != NULL) {
-								PathNode *tmp = path;
-								while (tmp != NULL) {
-									if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-										map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 0;
-									}
-									tmp = tmp->next;
-								}
-								free(path);
-							}
-
-							path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
-							PathNode *tmp = path;
-							while (tmp != NULL) {
-								if (map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] != 7) {
-									map[threed_to_oned(tmp->p.x, tmp->p.y, tmp->p.z, map_width, map_height)] = 8;
-								}
-								tmp = tmp->next;
+							if (path == NULL && cur_pos == NULL) {
+								path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors);
+								cur_pos = path;
 							}
 						}
 					}
@@ -335,6 +313,27 @@ int main() {
 				} break;
 			}
 		}
+
+		float new_time = (float)SDL_GetTicks() / 60.0;
+		float frame_time = new_time - current_time;
+		current_time = new_time;
+
+		if (cur_pos != NULL) {
+			if (t > 3.0) {
+				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
+				player = cur_pos->p;
+				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 7;
+				cur_pos = cur_pos->next;
+				t = 0.0;
+			}
+		} else {
+			if (path != NULL) {
+				free(path);
+				path = NULL;
+			}
+		}
+
+		t += frame_time;
 
 		SDL_RenderClear(renderer);
 
