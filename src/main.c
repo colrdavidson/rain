@@ -321,6 +321,7 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+						printf("(%u, %u, %u)\n", p.x, p.y, p.z);
 						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
 							start = player;
 							goal = p;
@@ -449,13 +450,13 @@ int main() {
 
 					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
 
-					SDL_Rect dest;
-					dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
-					dest.y = (((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale;
 
 					if (tile_id != 0) {
+						SDL_Rect dest;
 						dest.w = (i32)((f32)(surface_map[tile_id]->w) * scale);
 						dest.h = (i32)((f32)(surface_map[tile_id]->h) * scale);
+						dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
+						dest.y = ((((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale) - dest.h;
 
 						if (redraw_buffer) {
 							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
