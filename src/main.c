@@ -321,7 +321,6 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-						printf("(%u, %u, %u)\n", p.x, p.y, p.z);
 						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
 							start = player;
 							goal = p;
