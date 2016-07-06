@@ -109,4 +109,8 @@ Point new_point(u32 x, u32 y, u32 z) {
 	return p;
 }
 
+void print_point(Point p) {
+	printf("(%u, %u, %u)\n", p.x, p.y, p.z);
+}
+
 #endif

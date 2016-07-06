@@ -1,14 +1,14 @@
 20 20 4
 
 8
-1 assets/wall.bmp
-2 assets/grass.bmp
-3 assets/brick.bmp
-4 assets/wood_wall.bmp
-5 assets/north_door.bmp
-6 assets/roof.bmp
-7 assets/wood_ladder_wall.bmp
-8 assets/tree.bmp
+1 assets/wall.png
+2 assets/grass.png
+3 assets/brick.png
+4 assets/wood_wall.png
+5 assets/north_door.png
+6 assets/roof.png
+7 assets/wood_ladder_wall.png
+8 assets/tree.png
 
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 1 2 2 2 1 1 2 2 2 1 1 2 2 2 1 1 2 2 2 1
@@ -48,7 +48,7 @@
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-0 0 8 0 0 0 0 8 0 0 0 0 8 0 0 0 0 8 0 0
+0 0 8 0 0 0 0 8 0 p p 0 8 0 0 0 0 8 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 

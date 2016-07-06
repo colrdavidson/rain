@@ -1,4 +1,5 @@
 #include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
 #include <stdio.h>
 
 #include "common.h"
@@ -15,7 +16,7 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 	}
 
 	for (i32 i = 0; i < surface->w * surface->h; i++) {
-		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
+		u32 pixel = ((u8 *)surface->pixels)[pchunk_ptr + 3] << 24 | ((u8 *)surface->pixels)[pchunk_ptr + 2] << 16 | ((u8 *)surface->pixels)[pchunk_ptr + 1] << 8 | ((u8 *)surface->pixels)[pchunk_ptr];
 		if (pixel != 0) {
 			Point pix_pos = oned_to_twod(i, surface->w);
 			if ((screen_rel_rect->x + pix_pos.x < screen_width) && (screen_rel_rect->y + pix_pos.y < screen_height)) {
@@ -25,7 +26,7 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 				}
 			}
 		}
-		pchunk_ptr += 3;
+		pchunk_ptr += 4;
 	}
 }
 
@@ -46,6 +47,7 @@ int main() {
     i32 screen_height;
 
 	SDL_Init(SDL_INIT_VIDEO);
+	IMG_Init(IMG_INIT_PNG);
 	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_GL_GetDrawableSize(window, &screen_width, &screen_height);
 
@@ -84,21 +86,19 @@ int main() {
 		fgets(line, 256, fp);
 
 		u32 idx = atoi(strtok(line, " "));
-		char *bmp_filename = strtok(NULL, " ");
-		bmp_filename[strlen(bmp_filename) - 1] = 0;
+		char *img_filename = strtok(NULL, " ");
+		img_filename[strlen(img_filename) - 1] = 0;
 
-		surface_map[idx] = SDL_LoadBMP(bmp_filename);
+		surface_map[idx] = IMG_Load(img_filename);
 		if (surface_map[idx] == NULL) {
-			printf("Error opening tile %u, (%s)\n", idx, bmp_filename);
+			printf("Error opening tile %u, (%s)\n", idx, img_filename);
 			return 0;
 		}
 
-		SDL_SetColorKey(surface_map[idx], SDL_TRUE, SDL_MapRGB(surface_map[idx]->format, 0, 0, 0));
 		texture_map[idx] = SDL_CreateTextureFromSurface(renderer, surface_map[idx]);
 	}
 
-	surface_map[player_idx] = SDL_LoadBMP("assets/cylinder.bmp");
-	SDL_SetColorKey(surface_map[player_idx], SDL_TRUE, SDL_MapRGB(surface_map[player_idx]->format, 0, 0, 0));
+	surface_map[player_idx] = IMG_Load("assets/cylinder.png");
 	texture_map[player_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[player_idx]);
 
 	f32 scale = 1.0;
@@ -126,7 +126,12 @@ int main() {
 					bit = strtok(NULL, " ");
 				}
 
-				u8 tile_id = atoi(bit);
+                u8 tile_id;
+				if (strncmp(bit, "p", 1) == 0) {
+					tile_id = player_idx;
+				} else {
+					tile_id = atoi(bit);
+				}
 				map[threed_to_oned(x, y, z, map_width, map_height)] = tile_id;
 			}
 			fgets(line, 256, fp);
@@ -134,14 +139,7 @@ int main() {
 		fgets(line, 256, fp);
 	}
 
-	Point char_1 = new_point(0, 0, 1);
-	Point char_2 = new_point(1, 1, 1);
-
-    Point selected_char = char_1;
-
-	map[threed_to_oned(char_1.x, char_1.y, char_1.z, map_width, map_height)] = player_idx;
-	map[threed_to_oned(char_2.x, char_2.y, char_2.z, map_width, map_height)] = player_idx;
-
+    Point selected_char = new_point(0, 0, 0);
 
 	f32 camera_pos_x = -35;
 	f32 camera_pos_y = screen_height / 2;
@@ -329,7 +327,7 @@ int main() {
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == player_idx && !travelling) {
 							selected_char = p;
-						} else if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+						} else if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0 && map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] == player_idx) {
 							start = selected_char;
 							goal = p;
 							goal.z += 1;
@@ -487,6 +485,7 @@ int main() {
 	img.data = (Color *)click_map;
 	write_tga("test.tga", &img);
 
+	IMG_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
