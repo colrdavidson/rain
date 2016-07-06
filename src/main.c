@@ -134,8 +134,13 @@ int main() {
 		fgets(line, 256, fp);
 	}
 
-	Point player = new_point(0, 0, 1);
-	map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = player_idx;
+	Point char_1 = new_point(0, 0, 1);
+	Point char_2 = new_point(1, 1, 1);
+
+    Point selected_char = char_1;
+
+	map[threed_to_oned(char_1.x, char_1.y, char_1.z, map_width, map_height)] = player_idx;
+	map[threed_to_oned(char_2.x, char_2.y, char_2.z, map_width, map_height)] = player_idx;
 
 
 	f32 camera_pos_x = -35;
@@ -254,7 +259,7 @@ int main() {
 	f32 t = 0.0;
 
     u8 redraw_buffer = 1;
-
+	u8 travelling = 0;
 
 	u8 running = 1;
     while (running) {
@@ -322,14 +327,17 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-						if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
-							start = player;
+						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == player_idx && !travelling) {
+							selected_char = p;
+						} else if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0) {
+							start = selected_char;
 							goal = p;
 							goal.z += 1;
 
 							if (path == NULL && cur_pos == NULL) {
 								path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors, player_idx);
 								cur_pos = path;
+								travelling = 1;
 							}
 						}
 					}
@@ -356,9 +364,9 @@ int main() {
 
 		if (cur_pos != NULL) {
 			if (t > 3.0) {
-				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = 0;
-				player = cur_pos->p;
-				map[threed_to_oned(player.x, player.y, player.z, map_width, map_height)] = player_idx;
+				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = 0;
+				selected_char = cur_pos->p;
+				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = player_idx;
 				cur_pos = cur_pos->next;
 				t = 0.0;
 				triggered = 1;
@@ -367,6 +375,7 @@ int main() {
 			if (path != NULL) {
 				free(path);
 				path = NULL;
+				travelling = 0;
 			}
 		}
 
