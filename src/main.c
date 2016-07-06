@@ -33,7 +33,8 @@ void rescale_surfaces(SDL_Surface **surface_map, SDL_Surface **scaled_surface_ma
 	for (u32 i = 1; i < num_surfaces; i++) {
 		SDL_Surface *scaled = SDL_CreateRGBSurface(0, (u32)((f32)surface_map[i]->w * scale), (u32)((f32)surface_map[i]->h * scale), surface_map[i]->format->BitsPerPixel, surface_map[i]->format->Rmask, surface_map[i]->format->Gmask, surface_map[i]->format->Bmask, surface_map[i]->format->Amask);
 		SDL_BlitScaled(surface_map[i], NULL, scaled, NULL);
-		free(scaled_surface_map[i]);
+
+		SDL_FreeSurface(scaled_surface_map[i]);
 		scaled_surface_map[i] = scaled;
 	}
 }
