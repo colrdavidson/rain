@@ -1,5 +1,6 @@
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
+#include "SDL2/SDL_mixer.h"
 #include <stdio.h>
 
 #include "common.h"
@@ -47,6 +48,7 @@ int main() {
     i32 screen_height;
 
 	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_AUDIO);
 	IMG_Init(IMG_INIT_PNG);
 	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_GL_GetDrawableSize(window, &screen_width, &screen_height);
@@ -58,6 +60,13 @@ int main() {
 	}
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+	Mix_Init(0);
+	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+	Mix_Chunk *shoot_wav = Mix_LoadWAV("assets/shoot.wav");
+	Mix_Chunk *step_wav = Mix_LoadWAV("assets/step.wav");
+	//Mix_Music *music = Mix_LoadMUS("assets/rain.wav");
+
+	//Mix_PlayMusic(music, -1);
 
 	u32 click_map_size = screen_width * screen_height * sizeof(u16);
 	u16 *click_map = malloc(click_map_size);
@@ -341,12 +350,13 @@ int main() {
 
 							if (path == NULL && cur_pos == NULL) {
 								path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors, player_idx);
-								cur_pos = path;
+								cur_pos = path->next;
 								travelling = 1;
 							}
 						}
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
 						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == enemy_idx && map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] == player_idx) {
+							Mix_PlayChannel(-1, shoot_wav, 0);
  							map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] = 0;
 						}
 					}
@@ -373,6 +383,7 @@ int main() {
 
 		if (cur_pos != NULL) {
 			if (t > 3.0) {
+				Mix_PlayChannel(-1, step_wav, 0);
 				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = 0;
 				selected_char = cur_pos->p;
 				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = player_idx;
