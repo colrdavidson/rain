@@ -8,7 +8,7 @@
 #include "path.h"
 
 // Assumes a 24bit color depth for textures
-void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u32 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
+void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u16 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
 
 	if ((screen_rel_rect->x >= (i32)screen_width && (screen_rel_rect->x + screen_rel_rect->w) >= (i32)screen_width) || (screen_rel_rect->y >= (i32)screen_height && (screen_rel_rect->y + screen_rel_rect->h) >= (i32)screen_height)) {
@@ -59,8 +59,9 @@ int main() {
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 
-	u32 *click_map = malloc(screen_width * screen_height * sizeof(u32));
-	memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+	u32 click_map_size = screen_width * screen_height * sizeof(u16);
+	u16 *click_map = malloc(click_map_size);
+	memset(click_map, 0, click_map_size);
 
 	FILE *fp = fopen("assets/house_map", "r");
 	char *line = malloc(256);
@@ -76,13 +77,14 @@ int main() {
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
-	u32 tile_entries = atoi(line) + 2;
+	u32 tile_entries = atoi(line) + 3;
 	SDL_Surface *surface_map[tile_entries];
 	SDL_Surface *scaled_surface_map[tile_entries];
 	SDL_Texture *texture_map[tile_entries];
 
 	i32 player_idx = tile_entries - 1;
-	for (u32 i = 1; i < tile_entries - 1; i++) {
+	i32 enemy_idx = tile_entries - 2;
+	for (u32 i = 1; i < tile_entries - 2; i++) {
 		fgets(line, 256, fp);
 
 		u32 idx = atoi(strtok(line, " "));
@@ -98,8 +100,11 @@ int main() {
 		texture_map[idx] = SDL_CreateTextureFromSurface(renderer, surface_map[idx]);
 	}
 
-	surface_map[player_idx] = IMG_Load("assets/cylinder.png");
+	surface_map[player_idx] = IMG_Load("assets/player_cylinder.png");
 	texture_map[player_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[player_idx]);
+
+	surface_map[enemy_idx] = IMG_Load("assets/enemy_cylinder.png");
+	texture_map[enemy_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[enemy_idx]);
 
 	f32 scale = 1.0;
 
@@ -129,6 +134,8 @@ int main() {
                 u8 tile_id;
 				if (strncmp(bit, "p", 1) == 0) {
 					tile_id = player_idx;
+				} else if (strncmp(bit, "e", 1) == 0) {
+					tile_id = enemy_idx;
 				} else {
 					tile_id = atoi(bit);
 				}
@@ -338,6 +345,10 @@ int main() {
 								travelling = 1;
 							}
 						}
+					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == enemy_idx && map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] == player_idx) {
+ 							map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] = 0;
+						}
 					}
 
 				} break;
@@ -378,7 +389,7 @@ int main() {
 		}
 
 		if (triggered) {
-			memset(click_map, 0, screen_width * screen_height * sizeof(u32));
+			memset(click_map, 0, click_map_size);
 			redraw_buffer = 1;
 			triggered = 0;
 		}
@@ -468,6 +479,8 @@ int main() {
 						if (redraw_buffer) {
 							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
 						}
+
+						SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
 						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
 					}
 				}
@@ -481,7 +494,7 @@ int main() {
 	Image img;
     img.width = screen_width;
     img.height = screen_height;
-    img.bytes_per_pixel = 4;
+    img.bytes_per_pixel = 2;
 	img.data = (Color *)click_map;
 	write_tga("test.tga", &img);
 

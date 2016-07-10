@@ -113,4 +113,8 @@ void print_point(Point p) {
 	printf("(%u, %u, %u)\n", p.x, p.y, p.z);
 }
 
+f32 lerp(f32 t, f32 start, f32 end) {
+	return (1.0 - t) * start + (t * end);
+}
+
 #endif
