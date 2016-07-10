@@ -7,7 +7,8 @@
 
 typedef struct Entity {
 	Direction dir;
-    u8 health;
+    u8 cur_health;
+    u8 max_health;
 	u8 attack_damage;
 	u32 sprite_id;
 } Entity;
@@ -60,7 +61,8 @@ Tile *new_tile(u32 sprite_id) {
 Entity *new_entity(u32 sprite_id, u32 attack_damage, u32 health, Direction dir) {
 	Entity *tmp = malloc(sizeof(Entity));
 	tmp->sprite_id = sprite_id;
-	tmp->health = health;
+	tmp->cur_health = health;
+	tmp->max_health = health;
 	tmp->attack_damage = attack_damage;
 	tmp->dir = dir;
 

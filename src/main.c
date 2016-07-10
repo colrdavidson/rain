@@ -118,6 +118,7 @@ int main() {
 	f32 scale = 1.0;
 	Direction direction = NORTH;
 
+
 	for (u32 i = 1; i < tile_entries; i++) {
 		i32 tile_width, tile_height;
 		SDL_QueryTexture(texture_map[i], NULL, NULL, &tile_width, &tile_height);
@@ -128,6 +129,9 @@ int main() {
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
+
+    Entity **player_map = malloc(sizeof(Entity *) * 2);
+	u32 p_map_idx = 0;
 
 	for (u32 z = 0; z < map_depth - 1; z++) {
 		for (u32 y = 0; y < map_height; y++) {
@@ -143,6 +147,8 @@ int main() {
 
 				if (strncmp(bit, "p", 1) == 0) {
 					set_map_entity(map, x, y, z, new_entity(player_idx, 1, 10, direction));
+					player_map[p_map_idx] = get_map_entity(map, x, y, z);
+					p_map_idx++;
 				} else if (strncmp(bit, "e", 1) == 0) {
 					set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 10, direction));
 				} else {
@@ -362,6 +368,7 @@ int main() {
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
 						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
 							Mix_PlayChannel(-1, shoot_wav, 0);
+							get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health--;
  							set_map_entity(map, p.x, p.y, p.z, NULL);
 						}
 					}
@@ -513,10 +520,98 @@ int main() {
 
 						SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
 						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
+
 					}
 				}
 			}
 		}
+
+		SDL_Rect UI_frame;
+		UI_frame.w = screen_width;
+		UI_frame.h = screen_height / 7;
+		UI_frame.x = screen_width - UI_frame.w;
+		UI_frame.y = screen_height - UI_frame.h;
+
+		SDL_Rect player1_data_box;
+		player1_data_box.w = screen_width / 6;
+		player1_data_box.h = UI_frame.h;
+		player1_data_box.x = (u32)((f32)UI_frame.w * 0.25);
+		player1_data_box.y = UI_frame.y + UI_frame.h - player1_data_box.h;
+
+		SDL_Rect player2_data_box;
+		player2_data_box.w = screen_width / 6;
+		player2_data_box.h = UI_frame.h;
+		player2_data_box.x = (u32)((f32)UI_frame.w * 0.75) - player2_data_box.w;
+		player2_data_box.y = UI_frame.y + UI_frame.h - player2_data_box.h;
+
+		SDL_Rect player1_healthbar_background;
+		player1_healthbar_background.w = player1_data_box.w;
+		player1_healthbar_background.h = player1_data_box.h / 5;
+		player1_healthbar_background.x = player1_data_box.x;
+		player1_healthbar_background.y = player1_data_box.y + player1_data_box.h - player1_healthbar_background.h;
+
+		SDL_Rect player2_healthbar_background;
+		player2_healthbar_background.w = player2_data_box.w;
+		player2_healthbar_background.h = player2_data_box.h / 5;
+		player2_healthbar_background.x = player2_data_box.x;
+		player2_healthbar_background.y = player2_data_box.y + player2_data_box.h - player2_healthbar_background.h;
+
+        f32 player1_health_perc = (f32)player_map[0]->cur_health / (f32)player_map[0]->max_health;
+        f32 player2_health_perc = (f32)player_map[1]->cur_health / (f32)player_map[1]->max_health;
+
+		SDL_Rect player1_healthbar;
+		player1_healthbar.w = (u32)((f32)player1_data_box.w * player1_health_perc);
+		player1_healthbar.h = player1_healthbar_background.h;
+		player1_healthbar.x = player1_healthbar_background.x;
+		player1_healthbar.y = player1_healthbar_background.y;
+
+		SDL_Rect player2_healthbar;
+		player2_healthbar.w = (u32)((f32)player2_data_box.w * player2_health_perc);
+		player2_healthbar.h = player2_healthbar_background.h;
+		player2_healthbar.x = player2_healthbar_background.x;
+		player2_healthbar.y = player2_healthbar_background.y;
+
+		SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+		SDL_RenderFillRect(renderer, &UI_frame);
+
+		if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == player_map[0]) {
+			SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
+		} else {
+			SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
+		}
+		SDL_RenderFillRect(renderer, &player1_data_box);
+
+		if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == player_map[1]) {
+			SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
+		} else {
+			SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
+		}
+		SDL_RenderFillRect(renderer, &player2_data_box);
+
+		SDL_Rect player1_image_box;
+		player1_image_box.w = player1_data_box.w;
+		player1_image_box.h = player1_data_box.h - player1_healthbar.h;
+		player1_image_box.x = player1_data_box.x;
+		player1_image_box.y = player1_data_box.y;
+
+		SDL_Rect player2_image_box;
+		player2_image_box.w = player2_data_box.w;
+		player2_image_box.h = player2_data_box.h - player2_healthbar.h;
+		player2_image_box.x = player2_data_box.x;
+		player2_image_box.y = player2_data_box.y;
+
+		SDL_RenderCopy(renderer, texture_map[player_map[0]->sprite_id], NULL, &player1_image_box);
+		SDL_RenderCopy(renderer, texture_map[player_map[1]->sprite_id], NULL, &player2_image_box);
+
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_RenderFillRect(renderer, &player1_healthbar_background);
+		SDL_RenderFillRect(renderer, &player2_healthbar_background);
+
+		SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
+		SDL_RenderFillRect(renderer, &player1_healthbar);
+		SDL_RenderFillRect(renderer, &player2_healthbar);
+
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
 		redraw_buffer = 0;
 		SDL_RenderPresent(renderer);
