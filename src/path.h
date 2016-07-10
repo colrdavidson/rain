@@ -136,7 +136,6 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
     while (point_eq(path_head->p, start)) {
 		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
         if (tmp == NULL) {
-			puts("tmp == NULL");
 			while (head != NULL) {
 				qpop(&head);
 			}
