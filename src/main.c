@@ -7,6 +7,7 @@
 #include "tga.h"
 #include "point.h"
 #include "path.h"
+#include "map.h"
 
 // Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u16 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
@@ -81,8 +82,7 @@ int main() {
 	u32 map_depth = atoi(strtok(NULL, " ")) + 1;
 	printf("Map Size: %dx%dx%d\n", map_width, map_height, map_depth);
 
-	u8 map[map_width * map_depth * map_height];
-	memset(map, 0, sizeof(map));
+	Map *map = new_map(map_width, map_height, map_depth);
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
@@ -91,8 +91,8 @@ int main() {
 	SDL_Surface *scaled_surface_map[tile_entries];
 	SDL_Texture *texture_map[tile_entries];
 
-	i32 player_idx = tile_entries - 1;
-	i32 enemy_idx = tile_entries - 2;
+	u32 player_idx = tile_entries - 1;
+	u32 enemy_idx = tile_entries - 2;
 	for (u32 i = 1; i < tile_entries - 2; i++) {
 		fgets(line, 256, fp);
 
@@ -116,6 +116,7 @@ int main() {
 	texture_map[enemy_idx] = SDL_CreateTextureFromSurface(renderer, surface_map[enemy_idx]);
 
 	f32 scale = 1.0;
+	Direction direction = NORTH;
 
 	for (u32 i = 1; i < tile_entries; i++) {
 		i32 tile_width, tile_height;
@@ -128,10 +129,10 @@ int main() {
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
 
-	for (u8 z = 0; z < map_depth - 1; z++) {
-		for (u8 y = 0; y < map_height; y++) {
+	for (u32 z = 0; z < map_depth - 1; z++) {
+		for (u32 y = 0; y < map_height; y++) {
 			u8 new_line = 1;
-			for (u8 x = 0; x < map_width; x++) {
+			for (u32 x = 0; x < map_width; x++) {
 				char *bit;
 				if (new_line == 1) {
 					bit = strtok(line, " ");
@@ -140,15 +141,16 @@ int main() {
 					bit = strtok(NULL, " ");
 				}
 
-                u8 tile_id;
 				if (strncmp(bit, "p", 1) == 0) {
-					tile_id = player_idx;
+					set_map_entity(map, x, y, z, new_entity(player_idx, 1, 10, direction));
 				} else if (strncmp(bit, "e", 1) == 0) {
-					tile_id = enemy_idx;
+					set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 10, direction));
 				} else {
-					tile_id = atoi(bit);
+					u32 tile_id = atoi(bit);
+					if (tile_id) {
+						set_map_tile(map, x, y, z, new_tile(tile_id), 1);
+					}
 				}
-				map[threed_to_oned(x, y, z, map_width, map_height)] = tile_id;
 			}
 			fgets(line, 256, fp);
 		}
@@ -171,20 +173,20 @@ int main() {
 		rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 	}
 
-	Direction direction = NORTH;
 	/*
 	SDL_Surface *dir_door_bmp = north_door_bmp;
 	SDL_Texture *dir_door_tex = north_door_tex;
 	*/
 
 	u32 max_neighbors = 10;
-	GridNode *node_map = malloc(sizeof(GridNode) * map_width * map_height * map_depth);
-	for (u32 x = 0; x < map_width; x++) {
-		for (u32 y = 0; y < map_height; y++) {
-			for (u32 z = 0; z < map_depth; z++) {
+	GridNode *node_map = malloc(sizeof(GridNode) * map->size);
+	for (u32 x = 0; x < map->width; x++) {
+		for (u32 y = 0; y < map->height; y++) {
+			for (u32 z = 0; z < map->depth; z++) {
 				GridNode tmp;
-				tmp.tile_pos = threed_to_oned(x, y, z, map_width, map_height);
-				tmp.tile_type = map[tmp.tile_pos];
+				tmp.tile_pos = threed_to_oned(x, y, z, map->width, map->height);
+				tmp.w = get_map_space(map, x, y, z);
+
 				tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
 
 				node_map[threed_to_oned(x, y, z, map_width, map_height)] = tmp;
@@ -192,9 +194,9 @@ int main() {
 		}
 	}
 
-	for (u32 y = 0; y < map_height; y++) {
-    	for (u32 x = 0; x < map_width; x++) {
-    		for (u32 z = 0; z < map_depth; z++) {
+	for (u32 y = 0; y < map->height; y++) {
+    	for (u32 x = 0; x < map->width; x++) {
+    		for (u32 z = 0; z < map->depth; z++) {
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
 				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
@@ -235,7 +237,7 @@ int main() {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map_width, map_height)];
 				}
 
-				if (z > 0 && map[threed_to_oned(x, y, z - 1, map_width, map_height)] == 0) {
+				if (z > 0 && !has_tile(map, x, y, z - 1)) {
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
 					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
@@ -341,23 +343,26 @@ int main() {
 					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == player_idx && !travelling) {
+						Point hover_p = new_point(p.x, p.y, p.z + 1);
+						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == player_idx && !travelling) {
 							selected_char = p;
-						} else if (map[threed_to_oned(p.x, p.y, p.z + 1, map_width, map_height)] == 0 && map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] == player_idx) {
+						} else if (can_move(map, selected_char, hover_p) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
 							start = selected_char;
 							goal = p;
 							goal.z += 1;
 
 							if (path == NULL && cur_pos == NULL) {
-								path = find_path(start, goal, node_map, map_width, map_height, map_depth, max_neighbors, player_idx);
-								cur_pos = path->next;
-								travelling = 1;
+								path = find_path(start, goal, node_map, map->width, map->height, map->depth, max_neighbors);
+								if (path != NULL) {
+									cur_pos = path->next;
+									travelling = 1;
+								}
 							}
 						}
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-						if (map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] == enemy_idx && map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] == player_idx) {
+						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
 							Mix_PlayChannel(-1, shoot_wav, 0);
- 							map[threed_to_oned(p.x, p.y, p.z, map_width, map_height)] = 0;
+ 							set_map_entity(map, p.x, p.y, p.z, NULL);
 						}
 					}
 
@@ -384,9 +389,8 @@ int main() {
 		if (cur_pos != NULL) {
 			if (t > 3.0) {
 				Mix_PlayChannel(-1, step_wav, 0);
-				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = 0;
+				move_entity(map, selected_char, cur_pos->p);
 				selected_char = cur_pos->p;
-				map[threed_to_oned(selected_char.x, selected_char.y, selected_char.z, map_width, map_height)] = player_idx;
 				cur_pos = cur_pos->next;
 				t = 0.0;
 				triggered = 1;
@@ -477,10 +481,26 @@ int main() {
 						} break;
 					}
 
-					u8 tile_id = map[threed_to_oned(adj_x, adj_y, z, map_width, map_height)];
+					if (has_tile(map, adj_x, adj_y, z)) {
+                        u32 tile_id = get_map_tile(map, adj_x, adj_y, z)->sprite_id;
 
+						SDL_Rect dest;
+						dest.w = (i32)((f32)(surface_map[tile_id]->w) * scale);
+						dest.h = (i32)((f32)(surface_map[tile_id]->h) * scale);
+						dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
+						dest.y = ((((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale) - dest.h;
 
-					if (tile_id != 0) {
+						if (redraw_buffer) {
+							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+						}
+
+						SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
+						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
+					}
+
+					if (has_entity(map, adj_x, adj_y, z)) {
+                        u32 tile_id = get_map_entity(map, adj_x, adj_y, z)->sprite_id;
+
 						SDL_Rect dest;
 						dest.w = (i32)((f32)(surface_map[tile_id]->w) * scale);
 						dest.h = (i32)((f32)(surface_map[tile_id]->h) * scale);
