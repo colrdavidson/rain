@@ -118,7 +118,6 @@ int main() {
 	f32 scale = 1.0;
 	Direction direction = NORTH;
 
-
 	for (u32 i = 1; i < tile_entries; i++) {
 		i32 tile_width, tile_height;
 		SDL_QueryTexture(texture_map[i], NULL, NULL, &tile_width, &tile_height);
@@ -146,11 +145,11 @@ int main() {
 				}
 
 				if (strncmp(bit, "p", 1) == 0) {
-					set_map_entity(map, x, y, z, new_entity(player_idx, 1, 10, direction));
+					set_map_entity(map, x, y, z, new_entity(player_idx, 1, 5, direction));
 					player_map[p_map_idx] = get_map_entity(map, x, y, z);
 					p_map_idx++;
 				} else if (strncmp(bit, "e", 1) == 0) {
-					set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 10, direction));
+					set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 5, direction));
 				} else {
 					u32 tile_id = atoi(bit);
 					if (tile_id) {
@@ -185,93 +184,7 @@ int main() {
 	*/
 
 	u32 max_neighbors = 10;
-	GridNode *node_map = malloc(sizeof(GridNode) * map->size);
-	for (u32 x = 0; x < map->width; x++) {
-		for (u32 y = 0; y < map->height; y++) {
-			for (u32 z = 0; z < map->depth; z++) {
-				GridNode tmp;
-				tmp.tile_pos = threed_to_oned(x, y, z, map->width, map->height);
-				tmp.w = get_map_space(map, x, y, z);
-
-				tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
-
-				node_map[threed_to_oned(x, y, z, map_width, map_height)] = tmp;
-			}
-		}
-	}
-
-	for (u32 y = 0; y < map->height; y++) {
-    	for (u32 x = 0; x < map->width; x++) {
-    		for (u32 z = 0; z < map->depth; z++) {
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[UP] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[DOWN] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = NULL;
-				node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = NULL;
-
-				if (y < map_height - 1) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = &node_map[threed_to_oned(x, y + 1, z, map_width, map_height)];
-				}
-				if (x < map_width - 1) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = &node_map[threed_to_oned(x + 1, y, z, map_width, map_height)];
-				}
-				if (x > 0) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = &node_map[threed_to_oned(x - 1, y, z, map_width, map_height)];
-				}
-				if (y > 0) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
-				}
-
-				if (x > 0 && y > 0) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = &node_map[threed_to_oned(x - 1, y - 1, z, map_width, map_height)];
-				}
-
-				if (x < map_width - 1 && y > 0) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = &node_map[threed_to_oned(x + 1, y - 1, z, map_width, map_height)];
-				}
-
-				if (x < map_width - 1 && y < map_height - 1) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = &node_map[threed_to_oned(x + 1, y + 1, z, map_width, map_height)];
-				}
-
-				if (x > 0 && y < map_height - 1) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map_width, map_height)];
-				}
-
-				if (z > 0 && !has_tile(map, x, y, z - 1)) {
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTH] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[EAST] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[WEST] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTH] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[UP] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[DOWN] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHEAST] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[NORTHWEST] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHEAST] = NULL;
-					node_map[threed_to_oned(x, y, z, map_width, map_height)].neighbors[SOUTHWEST] = NULL;
-				}
-
-
-				/*
-				 * Fixed ID's are no longer useful in the new dynamic loader. To re-enable ladders,
-				 * map files need to be able to denote block descriptors
-				 *
-				if (z < map_depth - 2 && map[threed_to_oned(x, y, z + 1, map_width, map_height)] == 9) {
-					node_map[threed_to_oned(x, y - 1, z, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
-					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)];
-
-					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
-					node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
-				}
-				*/
-			}
-		}
-	}
+	GridNode *node_map = new_nodemap(map, max_neighbors);
 
 	Point start;
 	Point goal;
@@ -353,13 +266,13 @@ int main() {
 						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == player_idx && !travelling) {
 							selected_char = p;
 						} else if (can_move(map, selected_char, hover_p) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
-							start = selected_char;
-							goal = p;
-							goal.z += 1;
-
 							if (path == NULL && cur_pos == NULL) {
+								start = selected_char;
+								goal = p;
+								goal.z += 1;
 								path = find_path(start, goal, node_map, map->width, map->height, map->depth, max_neighbors);
 								if (path != NULL) {
+									get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points--;
 									cur_pos = path->next;
 									travelling = 1;
 								}
@@ -367,11 +280,24 @@ int main() {
 						}
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
 						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
-							Mix_PlayChannel(-1, shoot_wav, 0);
-							get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health--;
- 							set_map_entity(map, p.x, p.y, p.z, NULL);
-							memset(click_map, 0, click_map_size);
-							redraw_buffer = 1;
+							u32 turns = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points;
+							if (turns == 1) {
+								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points = 0;
+							} else if (turns > 1) {
+								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points -= 2;
+							} else {
+								continue;
+							}
+
+							u32 health = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health;
+							if (health != 0) {
+								Mix_PlayChannel(-1, shoot_wav, 0);
+								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health--;
+
+								set_map_entity(map, p.x, p.y, p.z, NULL);
+								memset(click_map, 0, click_map_size);
+								redraw_buffer = 1;
+							}
 						}
 					}
 
@@ -536,6 +462,7 @@ int main() {
 		SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
 		SDL_RenderFillRect(renderer, &UI_frame);
 
+		u32 leftovers = 0;
 		for (u32 i = 0; i < p_map_idx; i++) {
 			u32 shim = screen_width / (p_map_idx * 3);
             f32 box_pos = ((f32)(i + 1) / (f32)(p_map_idx + 1));
@@ -559,6 +486,17 @@ int main() {
 			player_healthbar.x = player_healthbar_background.x;
 			player_healthbar.y = player_healthbar_background.y;
 
+			SDL_Rect player_image_box;
+			player_image_box.w = player_data_box.w;
+			player_image_box.h = player_data_box.h - player_healthbar.h;
+			player_image_box.x = player_data_box.x;
+			player_image_box.y = player_data_box.y;
+
+			SDL_Rect player_turn_indicator;
+			player_turn_indicator.w = player_data_box.w / 4;
+			player_turn_indicator.h = player_data_box.h / 4;
+			player_turn_indicator.x = player_data_box.x;
+			player_turn_indicator.y = player_data_box.y;
 
 			if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == player_map[i]) {
 				SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
@@ -567,12 +505,6 @@ int main() {
 			}
 			SDL_RenderFillRect(renderer, &player_data_box);
 
-			SDL_Rect player_image_box;
-			player_image_box.w = player_data_box.w;
-			player_image_box.h = player_data_box.h - player_healthbar.h;
-			player_image_box.x = player_data_box.x;
-			player_image_box.y = player_data_box.y;
-
 			SDL_RenderCopy(renderer, texture_map[player_map[i]->sprite_id], NULL, &player_image_box);
 
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -580,6 +512,23 @@ int main() {
 
 			SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
 			SDL_RenderFillRect(renderer, &player_healthbar);
+
+			if (player_map[i]->turn_points > 0) {
+				SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
+			} else {
+				SDL_SetRenderDrawColor(renderer, 90, 0, 0, 255);
+			}
+
+			SDL_RenderFillRect(renderer, &player_turn_indicator);
+
+			leftovers += player_map[i]->turn_points;
+		}
+
+		if (leftovers == 0 && !travelling) {
+			puts("turn over");
+			for (u32 i = 0; i < p_map_idx; i++) {
+				player_map[i]->turn_points = 2;
+			}
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -587,6 +536,7 @@ int main() {
 		redraw_buffer = 0;
 		SDL_RenderPresent(renderer);
 	}
+
 
 	Image img;
     img.width = screen_width;

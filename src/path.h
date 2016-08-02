@@ -24,6 +24,98 @@ typedef struct PathNode {
 	struct PathNode *next;
 } PathNode;
 
+GridNode *new_nodemap(Map *map, u32 max_neighbors) {
+	GridNode *node_map = malloc(sizeof(GridNode) * map->size);
+	for (u32 x = 0; x < map->width; x++) {
+		for (u32 y = 0; y < map->height; y++) {
+			for (u32 z = 0; z < map->depth; z++) {
+				GridNode tmp;
+				tmp.tile_pos = threed_to_oned(x, y, z, map->width, map->height);
+				tmp.w = get_map_space(map, x, y, z);
+
+				tmp.neighbors = malloc(sizeof(GridNode) * max_neighbors);
+
+				node_map[threed_to_oned(x, y, z, map->width, map->height)] = tmp;
+			}
+		}
+	}
+
+	for (u32 y = 0; y < map->height; y++) {
+    	for (u32 x = 0; x < map->width; x++) {
+    		for (u32 z = 0; z < map->depth; z++) {
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTH] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[EAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[WEST] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTH] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[UP] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[DOWN] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHEAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHWEST] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHEAST] = NULL;
+				node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHWEST] = NULL;
+
+				if (y < map->height - 1) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTH] = &node_map[threed_to_oned(x, y + 1, z, map->width, map->height)];
+				}
+				if (x < map->width - 1) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[EAST] = &node_map[threed_to_oned(x + 1, y, z, map->width, map->height)];
+				}
+				if (x > 0) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[WEST] = &node_map[threed_to_oned(x - 1, y, z, map->width, map->height)];
+				}
+				if (y > 0) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTH] = &node_map[threed_to_oned(x, y - 1, z, map->width, map->height)];
+				}
+
+				if (x > 0 && y > 0) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHWEST] = &node_map[threed_to_oned(x - 1, y - 1, z, map->width, map->height)];
+				}
+
+				if (x < map->width - 1 && y > 0) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHEAST] = &node_map[threed_to_oned(x + 1, y - 1, z, map->width, map->height)];
+				}
+
+				if (x < map->width - 1 && y < map->height - 1) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHWEST] = &node_map[threed_to_oned(x + 1, y + 1, z, map->width, map->height)];
+				}
+
+				if (x > 0 && y < map->height - 1) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHEAST] = &node_map[threed_to_oned(x - 1, y + 1, z, map->width, map->height)];
+				}
+
+				if (z > 0 && !has_tile(map, x, y, z - 1)) {
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTH] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[EAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[WEST] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTH] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[UP] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[DOWN] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHEAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[NORTHWEST] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHEAST] = NULL;
+					node_map[threed_to_oned(x, y, z, map->width, map->height)].neighbors[SOUTHWEST] = NULL;
+				}
+
+
+				/*
+				 * Fixed ID's are no longer useful in the new dynamic loader. To re-enable ladders,
+				 * map files need to be able to denote block descriptors
+				 *
+				if (z < map_depth - 2 && map[threed_to_oned(x, y, z + 1, map_width, map_height)] == 9) {
+					node_map[threed_to_oned(x, y - 1, z, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
+					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[UP] = &node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)];
+
+					node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z, map_width, map_height)];
+					node_map[threed_to_oned(x, y - 1, z + 2, map_width, map_height)].neighbors[DOWN] = &node_map[threed_to_oned(x, y - 1, z + 1, map_width, map_height)];
+				}
+				*/
+			}
+		}
+	}
+
+	return node_map;
+}
+
 void qpush(QueueNode **head, QueueNode **tail, GridNode *tile) {
 	QueueNode *tmp = malloc(sizeof(QueueNode));
 	tmp->tile = tile;

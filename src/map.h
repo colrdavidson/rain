@@ -10,6 +10,7 @@ typedef struct Entity {
     u8 cur_health;
     u8 max_health;
 	u8 attack_damage;
+	u8 turn_points;
 	u32 sprite_id;
 } Entity;
 
@@ -64,6 +65,7 @@ Entity *new_entity(u32 sprite_id, u32 attack_damage, u32 health, Direction dir) 
 	tmp->cur_health = health;
 	tmp->max_health = health;
 	tmp->attack_damage = attack_damage;
+	tmp->turn_points = 2;
 	tmp->dir = dir;
 
 	return tmp;
@@ -143,7 +145,7 @@ u8 has_entity(Map *m, u32 x, u32 y, u32 z) {
 }
 
 u8 can_move(Map *m, Point self, Point goal) {
-	if (has_entity(m, self.x, self.y, self.z) && !get_map_space(m, goal.x, goal.y, goal.z)->solid) {
+	if (has_entity(m, self.x, self.y, self.z) && !get_map_space(m, goal.x, goal.y, goal.z)->solid && get_map_entity(m, self.x, self.y, self.z)->turn_points > 0) {
 		return 1;
 	}
 
@@ -161,7 +163,6 @@ void move_entity(Map *m, Point a, Point b) {
 
 	m->spaces[threed_to_oned(a.x, a.y, a.z, m->width, m->height)]->e = NULL;
 	m->spaces[threed_to_oned(a.x, a.y, a.z, m->width, m->height)]->solid = 0;
-
 }
 
 
