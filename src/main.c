@@ -160,7 +160,7 @@ int main() {
 
 				if (strncmp(bit, "p", 1) == 0) {
 					if (player_map_idx < max_players) {
-						set_map_entity(map, x, y, z, new_entity(player_idx, 1, 5, direction));
+						set_map_entity(map, x, y, z, new_entity(player_idx, 2, 4, direction));
 						entity_map[player_map_idx] = get_map_entity(map, x, y, z);
 						player_map_idx++;
 					} else {
@@ -169,7 +169,7 @@ int main() {
 					}
 				} else if (strncmp(bit, "e", 1) == 0) {
 					if (enemy_map_idx < max_enemies) {
-						set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 5, direction));
+						set_map_entity(map, x, y, z, new_entity(enemy_idx, 2, 4, direction));
 						entity_map[max_players + enemy_map_idx] = get_map_entity(map, x, y, z);
 						enemy_map_idx++;
 					} else {
@@ -310,29 +310,10 @@ int main() {
 						}
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
 						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
-							u32 turns = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points;
-							if (turns == 1) {
-								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points = 0;
-							} else if (turns > 1) {
-								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points -= 2;
-							} else {
-								continue;
-							}
+							Entity *player = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z);
+							Entity *enemy = get_map_entity(map, p.x, p.y, p.z);
 
-							u32 health = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health;
-							if (health != 0) {
-								Mix_PlayChannel(-1, shoot_wav, 0);
-								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health--;
-
-								Entity *e = get_map_entity(map, p.x, p.y, p.z);
-								for (u32 i = 0; i < max_enemies; i++) {
-									if (e == entity_map[i]) {
-										entity_map[i] = NULL;
-										break;
-									}
-								}
-
-								set_map_entity(map, p.x, p.y, p.z, NULL);
+							if (fire_at_entity(map, entity_map, entity_map_length, player, enemy, shoot_wav)) {
 								redraw_buffer = true;
 							}
 						}
@@ -531,75 +512,93 @@ int main() {
 
 		u32 leftovers = 0;
 		for (u32 i = 0; i < max_players; i++) {
-			u32 shim = screen_width / (max_players * 3);
-            f32 box_pos = ((f32)(i + 1) / (f32)(max_players + 1));
-			SDL_Rect player_data_box;
-			player_data_box.w = screen_width / 6;
-			player_data_box.h = UI_frame.h;
-			player_data_box.x = (u32)((f32)UI_frame.w * box_pos) - player_data_box.w + shim;
-			player_data_box.y = UI_frame.y + UI_frame.h - player_data_box.h;
+			if (entity_map[i] != NULL) {
+				u32 shim = screen_width / (max_players * 3);
+				f32 box_pos = ((f32)(i + 1) / (f32)(max_players + 1));
+				SDL_Rect player_data_box;
+				player_data_box.w = screen_width / 6;
+				player_data_box.h = UI_frame.h;
+				player_data_box.x = (u32)((f32)UI_frame.w * box_pos) - player_data_box.w + shim;
+				player_data_box.y = UI_frame.y + UI_frame.h - player_data_box.h;
 
-			SDL_Rect player_healthbar_background;
-			player_healthbar_background.w = player_data_box.w;
-			player_healthbar_background.h = player_data_box.h / 5;
-			player_healthbar_background.x = player_data_box.x;
-			player_healthbar_background.y = player_data_box.y + player_data_box.h - player_healthbar_background.h;
+				SDL_Rect player_healthbar_background;
+				player_healthbar_background.w = player_data_box.w;
+				player_healthbar_background.h = player_data_box.h / 5;
+				player_healthbar_background.x = player_data_box.x;
+				player_healthbar_background.y = player_data_box.y + player_data_box.h - player_healthbar_background.h;
 
-			f32 player_health_perc = (f32)entity_map[i]->cur_health / (f32)entity_map[i]->max_health;
+				f32 player_health_perc = (f32)entity_map[i]->cur_health / (f32)entity_map[i]->max_health;
 
-			SDL_Rect player_healthbar;
-			player_healthbar.w = (u32)((f32)player_data_box.w * player_health_perc);
-			player_healthbar.h = player_healthbar_background.h;
-			player_healthbar.x = player_healthbar_background.x;
-			player_healthbar.y = player_healthbar_background.y;
+				SDL_Rect player_healthbar;
+				player_healthbar.w = (u32)((f32)player_data_box.w * player_health_perc);
+				player_healthbar.h = player_healthbar_background.h;
+				player_healthbar.x = player_healthbar_background.x;
+				player_healthbar.y = player_healthbar_background.y;
 
-			SDL_Rect player_image_box;
-			player_image_box.w = player_data_box.w;
-			player_image_box.h = player_data_box.h - player_healthbar.h;
-			player_image_box.x = player_data_box.x;
-			player_image_box.y = player_data_box.y;
+				SDL_Rect player_image_box;
+				player_image_box.w = player_data_box.w;
+				player_image_box.h = player_data_box.h - player_healthbar.h;
+				player_image_box.x = player_data_box.x;
+				player_image_box.y = player_data_box.y;
 
-			SDL_Rect player_turn_indicator;
-			player_turn_indicator.w = player_data_box.w / 4;
-			player_turn_indicator.h = player_data_box.h / 4;
-			player_turn_indicator.x = player_data_box.x;
-			player_turn_indicator.y = player_data_box.y;
+				SDL_Rect player_turn_indicator;
+				player_turn_indicator.w = player_data_box.w / 4;
+				player_turn_indicator.h = player_data_box.h / 4;
+				player_turn_indicator.x = player_data_box.x;
+				player_turn_indicator.y = player_data_box.y;
 
-			if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == entity_map[i]) {
-				SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
-			} else {
-				SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
-			}
-			SDL_RenderFillRect(renderer, &player_data_box);
+				if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == entity_map[i]) {
+					SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
+				} else {
+					SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
+				}
+				SDL_RenderFillRect(renderer, &player_data_box);
 
-			SDL_RenderCopy(renderer, texture_map[entity_map[i]->sprite_id], NULL, &player_image_box);
+				SDL_RenderCopy(renderer, texture_map[entity_map[i]->sprite_id], NULL, &player_image_box);
 
-			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-			SDL_RenderFillRect(renderer, &player_healthbar_background);
+				SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+				SDL_RenderFillRect(renderer, &player_healthbar_background);
 
-			SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
-			SDL_RenderFillRect(renderer, &player_healthbar);
-
-			if (entity_map[i]->turn_points > 0) {
 				SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
-			} else {
-				SDL_SetRenderDrawColor(renderer, 90, 0, 0, 255);
+				SDL_RenderFillRect(renderer, &player_healthbar);
+
+				if (entity_map[i]->turn_points > 0) {
+					SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
+				} else {
+					SDL_SetRenderDrawColor(renderer, 90, 0, 0, 255);
+				}
+
+				if (redraw_buffer) {
+					blit_rect_to_click_buffer(&player_data_box, click_map, screen_width, screen_height, point_to_oned(entity_map[i]->pos, map->width, map->height));
+				}
+
+				SDL_RenderFillRect(renderer, &player_turn_indicator);
+
+				leftovers += entity_map[i]->turn_points;
 			}
-
-			if (redraw_buffer) {
-				blit_rect_to_click_buffer(&player_data_box, click_map, screen_width, screen_height, point_to_oned(entity_map[i]->pos, map->width, map->height));
-			}
-
-			SDL_RenderFillRect(renderer, &player_turn_indicator);
-
-			leftovers += entity_map[i]->turn_points;
 		}
 
 		if (leftovers == 0 && !travelling) {
-			puts("turn over");
-			for (u32 i = 0; i < entity_map_length; i++) {
+			for (u32 i = 0; i < max_players; i++) {
 				if (entity_map[i] != NULL) {
 					entity_map[i]->turn_points = 2;
+				}
+			}
+
+			for (u32 i = max_players; i < entity_map_length; i++) {
+				if (entity_map[i] != NULL) {
+					SightNode *tmp = entity_map[i]->vis_head;
+					u8 found = false;
+					while (tmp != NULL && !found) {
+						for (u32 p_idx = 0; p_idx < max_players && !found; p_idx++) {
+							if (entity_map[p_idx] != NULL && point_eq(entity_map[p_idx]->pos, tmp->p)) {
+								//printf("enemy (%d, %d, %d) firing @ player (%d, %d, %d)\n", enemy_pos.x, enemy_pos.y, enemy_pos.z, tmp->p.x, tmp->p.y, tmp->p.z);
+								fire_at_entity(map, entity_map, entity_map_length, entity_map[i], entity_map[p_idx], shoot_wav);
+								found = true;
+							}
+						}
+						tmp = tmp->next;
+					}
 				}
 			}
 		}

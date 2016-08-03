@@ -2,6 +2,7 @@
 #define MAP_H
 
 #include <stdlib.h>
+#include <time.h>
 #include "common.h"
 #include "point.h"
 #include "map.h"
@@ -13,7 +14,7 @@ typedef struct SightNode {
 
 typedef struct Entity {
 	Direction dir;
-    u8 cur_health;
+    i8 cur_health;
     u8 max_health;
 	u8 attack_damage;
 	u8 turn_points;
@@ -202,6 +203,36 @@ void print_entity_map(Entity **entity_map, u32 map_length) {
 	for (u32 i = 0; i < map_length; i++) {
 		printf("[PEM-%d] %x\n", i, entity_map[i]);
 	}
+}
+
+u8 fire_at_entity(Map *m, Entity **entity_map, u32 entity_map_length, Entity *self, Entity *target, Mix_Chunk *shoot_wav) {
+	u32 turns = self->turn_points;
+	if (turns == 1) {
+		self->turn_points = 0;
+	} else if (turns > 1) {
+		self->turn_points -= 2;
+	} else {
+		return false;
+	}
+
+	Mix_PlayChannel(-1, shoot_wav, 0);
+
+	srand(time(NULL));
+	u8 damage = (rand() % (self->attack_damage)) + 1;
+	target->cur_health -= damage;
+	if (target->cur_health <= 0) {
+		for (u32 i = 0; i < entity_map_length; i++) {
+			if (target == entity_map[i]) {
+				entity_map[i] = NULL;
+				break;
+			}
+		}
+
+		set_map_entity(m, target->pos.x, target->pos.y, target->pos.z, NULL);
+		return true;
+	}
+
+	return false;
 }
 
 #endif
