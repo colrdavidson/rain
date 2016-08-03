@@ -27,6 +27,10 @@ u32 threed_to_oned(u32 x, u32 y, u32 z, u32 x_max, u32 y_max) {
 	return (z * x_max * y_max) + (y * x_max) + x;
 }
 
+u32 point_to_oned(Point p, u32 x_max, u32 y_max) {
+	return (p.z * x_max * y_max) + (p.y * x_max) + p.x;
+}
+
 u32 twod_to_oned(u32 x, u32 y, u32 x_max) {
 	return (y * x_max) + x;
 }

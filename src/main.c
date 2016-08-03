@@ -9,7 +9,6 @@
 #include "path.h"
 #include "map.h"
 
-// Assumes a 24bit color depth for textures
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u16 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
 	u32 pchunk_ptr = 0;
 
@@ -29,6 +28,18 @@ void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rec
 			}
 		}
 		pchunk_ptr += 4;
+	}
+}
+
+void blit_rect_to_click_buffer(SDL_Rect *screen_rel_rect, u16 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {
+	for (u32 i = 0; i < screen_rel_rect->w * screen_rel_rect->h; i++) {
+		Point pix_pos = oned_to_twod(i, screen_rel_rect->w);
+		if ((screen_rel_rect->x + pix_pos.x < screen_width) && (screen_rel_rect->y + pix_pos.y < screen_height)) {
+			u32 click_idx = twod_to_oned(screen_rel_rect->x + pix_pos.x, screen_rel_rect->y + pix_pos.y, screen_width);
+			if (click_idx < screen_width * screen_height) {
+				click_map[click_idx] = tile_num;
+			}
+		}
 	}
 }
 
@@ -514,6 +525,9 @@ int main() {
 		UI_frame.y = screen_height - UI_frame.h;
 		SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
 		SDL_RenderFillRect(renderer, &UI_frame);
+		if (redraw_buffer) {
+			blit_rect_to_click_buffer(&UI_frame, click_map, screen_width, screen_height, map->size);
+		}
 
 		u32 leftovers = 0;
 		for (u32 i = 0; i < max_players; i++) {
@@ -570,6 +584,10 @@ int main() {
 				SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
 			} else {
 				SDL_SetRenderDrawColor(renderer, 90, 0, 0, 255);
+			}
+
+			if (redraw_buffer) {
+				blit_rect_to_click_buffer(&player_data_box, click_map, screen_width, screen_height, point_to_oned(entity_map[i]->pos, map->width, map->height));
 			}
 
 			SDL_RenderFillRect(renderer, &player_turn_indicator);
