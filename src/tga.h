@@ -59,7 +59,7 @@ void write_tga(const char *filename, Image *img) {
     header.width = img->width;
     header.height = img->height;
     header.data_t = 2;
-    header.img_desc = 0x08;
+    header.img_desc = 0x10;
 
     fwrite(&header, 1, sizeof(TGAHeader), out_file);
     fwrite((char *)img->data, 1, img->width * img->height * img->bytes_per_pixel, out_file);

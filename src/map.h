@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include "common.h"
 #include "point.h"
+#include "map.h"
+
+typedef struct SightNode {
+    Point p;
+	struct SightNode *next;
+} SightNode;
 
 typedef struct Entity {
 	Direction dir;
@@ -12,6 +18,10 @@ typedef struct Entity {
 	u8 attack_damage;
 	u8 turn_points;
 	u32 sprite_id;
+	u8 sight_radius;
+	u8 moved;
+	SightNode *vis_head;
+	Point pos;
 } Entity;
 
 typedef struct Tile {
@@ -22,6 +32,7 @@ typedef struct WorldSpace {
 	Entity *e;
 	Tile *t;
 	u8 solid;
+	u8 visible;
 } WorldSpace;
 
 typedef struct Map {
@@ -44,7 +55,8 @@ Map *new_map(u32 width, u32 height, u32 depth) {
 		WorldSpace *s = malloc(sizeof(WorldSpace));
 		s->t = NULL;
 		s->e = NULL;
-		s->solid = 0;
+		s->solid = false;
+		s->visible = false;
 
 		m->spaces[i] = s;
 	}
@@ -67,23 +79,21 @@ Entity *new_entity(u32 sprite_id, u32 attack_damage, u32 health, Direction dir) 
 	tmp->attack_damage = attack_damage;
 	tmp->turn_points = 2;
 	tmp->dir = dir;
+	tmp->sight_radius = 6;
+	tmp->moved = true;
+	tmp->vis_head = NULL;
+	tmp->pos = new_point(0, 0, 0);
 
 	return tmp;
 }
 
 WorldSpace *get_map_space(Map *m, u32 x, u32 y, u32 z) {
- 	WorldSpace *ret = m->spaces[threed_to_oned(x, y, z, m->width, m->height)];
-	return ret;
-}
-
-Tile *get_map_tile(Map *m, u32 x, u32 y, u32 z) {
-	Tile *ret = get_map_space(m, x, y, z)->t;
-	return ret;
-}
-
-Entity *get_map_entity(Map *m, u32 x, u32 y, u32 z) {
- 	Entity *ret = get_map_space(m, x, y, z)->e;
-	return ret;
+	if (x < m->width && y < m->height && z < m->depth) {
+		WorldSpace *ret = m->spaces[threed_to_oned(x, y, z, m->width, m->height)];
+		return ret;
+	} else {
+		return NULL;
+	}
 }
 
 void set_map_space(Map *m, u32 x, u32 y, u32 z, WorldSpace *w) {
@@ -95,24 +105,39 @@ void set_map_space(Map *m, u32 x, u32 y, u32 z, WorldSpace *w) {
 	}
 }
 
+Tile *get_map_tile(Map *m, u32 x, u32 y, u32 z) {
+	Tile *ret = get_map_space(m, x, y, z)->t;
+	return ret;
+}
+
 void set_map_tile(Map *m, u32 x, u32 y, u32 z, Tile *t, u8 solid) {
  	Tile *tmp = get_map_tile(m, x, y, z);
-	m->spaces[threed_to_oned(x, y, z, m->width, m->height)]->t = t;
-	m->spaces[threed_to_oned(x, y, z, m->width, m->height)]->solid = solid;
+	get_map_space(m, x, y, z)->t = t;
+	get_map_space(m, x, y, z)->solid = solid;
 
 	if (tmp != NULL) {
 		free(tmp);
+	}
+}
+
+Entity *get_map_entity(Map *m, u32 x, u32 y, u32 z) {
+	if (get_map_space(m, x, y, z) == NULL) {
+		return NULL;
+	} else {
+		Entity *ret = get_map_space(m, x, y, z)->e;
+		return ret;
 	}
 }
 
 void set_map_entity(Map *m, u32 x, u32 y, u32 z, Entity *e) {
  	Entity *tmp = get_map_entity(m, x, y, z);
-	m->spaces[threed_to_oned(x, y, z, m->width, m->height)]->e = e;
+	get_map_space(m, x, y, z)->e = e;
 
 	if (e == NULL) {
-		m->spaces[threed_to_oned(x, y, z, m->width, m->height)]->solid = 0;
+		get_map_space(m, x, y, z)->solid = false;
 	} else {
-		m->spaces[threed_to_oned(x, y, z, m->width, m->height)]->solid = 1;
+		get_map_space(m, x, y, z)->solid = true;
+		e->pos = new_point(x, y, z);
 	}
 
 	if (tmp != NULL) {
@@ -120,36 +145,42 @@ void set_map_entity(Map *m, u32 x, u32 y, u32 z, Entity *e) {
 	}
 }
 
+u8 is_valid_space(Map *m, u32 x, u32 y, u32 z) {
+	if (get_map_space(m, x, y, z) != NULL) {
+		return true;
+	}
+	return false;
+}
 
 u8 is_space_empty(Map *m, u32 x, u32 y, u32 z) {
 	if (get_map_tile(m, x, y, z) == NULL && get_map_entity(m, x, y, z) == NULL) {
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 u8 has_tile(Map *m, u32 x, u32 y, u32 z) {
 	if (get_map_tile(m, x, y, z) != NULL) {
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 u8 has_entity(Map *m, u32 x, u32 y, u32 z) {
 	if (get_map_entity(m, x, y, z) != NULL) {
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 u8 can_move(Map *m, Point self, Point goal) {
-	if (has_entity(m, self.x, self.y, self.z) && !get_map_space(m, goal.x, goal.y, goal.z)->solid && get_map_entity(m, self.x, self.y, self.z)->turn_points > 0) {
-		return 1;
+	if (has_entity(m, self.x, self.y, self.z) && is_valid_space(m, goal.x, goal.y, goal.z) && !get_map_space(m, goal.x, goal.y, goal.z)->solid && get_map_entity(m, self.x, self.y, self.z)->turn_points > 0) {
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 void move_entity(Map *m, Point a, Point b) {
@@ -159,11 +190,18 @@ void move_entity(Map *m, Point a, Point b) {
 	}
 
 	Entity *tmp = get_map_entity(m, a.x, a.y, a.z);
+	tmp->moved = true;
+
 	set_map_entity(m, b.x, b.y, b.z, tmp);
 
-	m->spaces[threed_to_oned(a.x, a.y, a.z, m->width, m->height)]->e = NULL;
-	m->spaces[threed_to_oned(a.x, a.y, a.z, m->width, m->height)]->solid = 0;
+	get_map_space(m, a.x, a.y, a.z)->e = NULL;
+	get_map_space(m, a.x, a.y, a.z)->solid = false;
 }
 
+void print_entity_map(Entity **entity_map, u32 map_length) {
+	for (u32 i = 0; i < map_length; i++) {
+		printf("[PEM-%d] %x\n", i, entity_map[i]);
+	}
+}
 
 #endif

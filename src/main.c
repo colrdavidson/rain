@@ -71,7 +71,6 @@ int main() {
 
 	u32 click_map_size = screen_width * screen_height * sizeof(u16);
 	u16 *click_map = malloc(click_map_size);
-	memset(click_map, 0, click_map_size);
 
 	FILE *fp = fopen("assets/house_map", "r");
 	char *line = malloc(256);
@@ -83,6 +82,7 @@ int main() {
 	printf("Map Size: %dx%dx%d\n", map_width, map_height, map_depth);
 
 	Map *map = new_map(map_width, map_height, map_depth);
+	memset(click_map, map->size, click_map_size);
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
@@ -129,13 +129,16 @@ int main() {
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
 
-    Entity **player_map = malloc(sizeof(Entity *) * 4);
-	u32 p_map_idx = 0;
+	u8 max_players = 4;
+	u8 max_enemies = 20;
+    Entity **entity_map = malloc(sizeof(Entity *) * (max_players + max_enemies));
+	u32 player_map_idx = 0;
+	u32 enemy_map_idx = 0;
 
-	for (u32 z = 0; z < map_depth - 1; z++) {
-		for (u32 y = 0; y < map_height; y++) {
+	for (u32 z = 0; z < map->depth - 1; z++) {
+		for (u32 y = 0; y < map->height; y++) {
 			u8 new_line = 1;
-			for (u32 x = 0; x < map_width; x++) {
+			for (u32 x = 0; x < map->width; x++) {
 				char *bit;
 				if (new_line == 1) {
 					bit = strtok(line, " ");
@@ -145,11 +148,23 @@ int main() {
 				}
 
 				if (strncmp(bit, "p", 1) == 0) {
-					set_map_entity(map, x, y, z, new_entity(player_idx, 1, 5, direction));
-					player_map[p_map_idx] = get_map_entity(map, x, y, z);
-					p_map_idx++;
+					if (player_map_idx < max_players) {
+						set_map_entity(map, x, y, z, new_entity(player_idx, 1, 5, direction));
+						entity_map[player_map_idx] = get_map_entity(map, x, y, z);
+						player_map_idx++;
+					} else {
+						puts("[MAP ERROR] Too many players!");
+						return 1;
+					}
 				} else if (strncmp(bit, "e", 1) == 0) {
-					set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 5, direction));
+					if (enemy_map_idx < max_enemies) {
+						set_map_entity(map, x, y, z, new_entity(enemy_idx, 1, 5, direction));
+						entity_map[max_players + enemy_map_idx] = get_map_entity(map, x, y, z);
+						enemy_map_idx++;
+					} else {
+						puts("[MAP ERROR] Too many enemies!");
+						return 1;
+					}
 				} else {
 					u32 tile_id = atoi(bit);
 					if (tile_id) {
@@ -161,6 +176,8 @@ int main() {
 		}
 		fgets(line, 256, fp);
 	}
+
+	u32 entity_map_length = player_map_idx + enemy_map_idx;
 
     Point selected_char = new_point(0, 0, 0);
 
@@ -193,8 +210,8 @@ int main() {
 	f32 current_time = (f32)SDL_GetTicks() / 60.0;
 	f32 t = 0.0;
 
-    u8 redraw_buffer = 1;
-	u8 travelling = 0;
+    u8 redraw_buffer = true;
+	u8 travelling = false;
 
 	u8 running = 1;
     while (running) {
@@ -204,22 +221,21 @@ int main() {
 
 		SDL_PumpEvents();
 		const u8 *state = SDL_GetKeyboardState(NULL);
-		u8 triggered = 0;
 		if (state[SDL_SCANCODE_UP]) {
 			camera_imp_y += camera_speed;
-			triggered = 1;
+			redraw_buffer = true;
 		}
 		if (state[SDL_SCANCODE_DOWN]) {
 			camera_imp_y -= camera_speed;
-			triggered = 1;
+			redraw_buffer = true;
 		}
 		if (state[SDL_SCANCODE_LEFT]) {
 			camera_imp_x += camera_speed;
-			triggered = 1;
+			redraw_buffer = true;
 		}
 		if (state[SDL_SCANCODE_RIGHT]) {
 			camera_imp_x -= camera_speed;
-			triggered = 1;
+			redraw_buffer = true;
 		}
 
 
@@ -229,26 +245,26 @@ int main() {
 					switch (event.key.keysym.sym) {
 						case SDLK_e: {
 							direction = cycle_right(direction);
-							triggered = 1;
+							redraw_buffer = true;
 						} break;
 						case SDLK_q: {
 							direction = cycle_left(direction);
-							triggered = 1;
+							redraw_buffer = true;
 						} break;
 						case SDLK_1: {
 							scale = 1.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
-							triggered = 1;
+							redraw_buffer = true;
 						} break;
 						case SDLK_2: {
 							scale = 2.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
-							triggered = 1;
+							redraw_buffer = true;
 						} break;
 						case SDLK_3: {
 							scale = 3.0;
 							rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
-							triggered = 1;
+							redraw_buffer = true;
 						} break;
 					}
 				} break;
@@ -259,7 +275,7 @@ int main() {
 					mouse_x = ((f32)screen_width / (f32)original_screen_width) * mouse_x;
 					mouse_y = ((f32)screen_height / (f32)original_screen_height) * mouse_y;
 
-					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map_width, map_height);
+					Point p = oned_to_threed(click_map[twod_to_oned(mouse_x, mouse_y, screen_width)], map->width, map->height);
 
 					if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 						Point hover_p = new_point(p.x, p.y, p.z + 1);
@@ -274,7 +290,10 @@ int main() {
 								if (path != NULL) {
 									get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->turn_points--;
 									cur_pos = path->next;
-									travelling = 1;
+									if (cur_pos == NULL) {
+										puts("cur_pos == NULL");
+									}
+									travelling = true;
 								}
 							}
 						}
@@ -294,16 +313,23 @@ int main() {
 								Mix_PlayChannel(-1, shoot_wav, 0);
 								get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->cur_health--;
 
+								Entity *e = get_map_entity(map, p.x, p.y, p.z);
+								for (u32 i = 0; i < max_enemies; i++) {
+									if (e == entity_map[i]) {
+										entity_map[i] = NULL;
+										break;
+									}
+								}
+
 								set_map_entity(map, p.x, p.y, p.z, NULL);
-								memset(click_map, 0, click_map_size);
-								redraw_buffer = 1;
+								redraw_buffer = true;
 							}
 						}
 					}
 
 				} break;
 				case SDL_QUIT: {
-					running = 0;
+					running = false;
 				} break;
 			}
 		}
@@ -328,20 +354,45 @@ int main() {
 				selected_char = cur_pos->p;
 				cur_pos = cur_pos->next;
 				t = 0.0;
-				triggered = 1;
+				redraw_buffer = true;
 			}
 		} else {
 			if (path != NULL) {
-				free(path);
+				free_path(path);
 				path = NULL;
-				travelling = 0;
+				travelling = false;
 			}
 		}
 
-		if (triggered) {
-			memset(click_map, 0, click_map_size);
-			redraw_buffer = 1;
-			triggered = 0;
+		if (redraw_buffer) {
+			memset(click_map, map->size, click_map_size);
+		}
+
+		u8 redraw_lights = false;
+		for (u32 i = 0; i < entity_map_length; i++) {
+			if (entity_map[i] != NULL && entity_map[i]->moved == true) {
+				redraw_lights = true;
+			}
+		}
+
+		if (redraw_lights) {
+			for (u32 i = 0; i < map->size; i++) {
+				map->spaces[i]->visible = false;
+			}
+
+			for (u32 i = 0; i < max_players; i++) {
+				if (entity_map[i] != NULL) {
+					update_visible(map, entity_map[i], true);
+					entity_map[i]->moved = false;
+				}
+			}
+
+			for (u32 i = max_players; i < entity_map_length; i++) {
+				if (entity_map[i] != NULL) {
+					update_visible(map, entity_map[i], false);
+					entity_map[i]->moved = false;
+				}
+			}
 		}
 
 		t += dt;
@@ -352,9 +403,9 @@ int main() {
 
 		SDL_RenderClear(renderer);
 
-		for (u32 z = 0; z < map_depth; z++) {
-			for (u32 x = 0; x < map_width; x++) {
-				for (u32 y = 0; y < map_height; y++) {
+		for (u32 z = 0; z < map->depth; z++) {
+			for (u32 x = 0; x < map->width; x++) {
+				for (u32 y = 0; y < map->height; y++) {
 
 					f32 adj_y;
 					f32 adj_x;
@@ -368,7 +419,7 @@ int main() {
 							adj_x = x;
 
 							cam_adj_x = x;
-							cam_adj_y = map_height - y;
+							cam_adj_y = map->height - y;
 
 							/*
 							dir_door_bmp = north_door_bmp;
@@ -376,25 +427,25 @@ int main() {
 							*/
 						} break;
 						case EAST: {
-							adj_y = map_height - y - 1;
+							adj_y = map->height - y - 1;
 							adj_x = x;
 
 							cam_adj_x = y;
-							cam_adj_y = map_width - x;
+							cam_adj_y = map->width - x;
 						} break;
 						case SOUTH: {
-							adj_y = map_height - y - 1;
-							adj_x = map_width - x - 1;
+							adj_y = map->height - y - 1;
+							adj_x = map->width - x - 1;
 
 							cam_adj_x = x;
-							cam_adj_y = map_height - y;
+							cam_adj_y = map->height - y;
 						} break;
 						case WEST: {
-							adj_x = map_width - x - 1;
+							adj_x = map->width - x - 1;
 							adj_y = y;
 
 							cam_adj_x = y;
-							cam_adj_y = map_width - x;
+							cam_adj_y = map->width - x;
 
 							/*
 							dir_door_bmp = west_door_bmp;
@@ -407,7 +458,7 @@ int main() {
 							adj_x = x;
 
 							cam_adj_x = x;
-							cam_adj_y = map_height - y;
+							cam_adj_y = map->height - y;
 
 							/*
 							dir_door_bmp = north_door_bmp;
@@ -425,15 +476,20 @@ int main() {
 						dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + camera_pos_x) * scale;
 						dest.y = ((((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale) - dest.h;
 
-						if (redraw_buffer) {
-							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
-						}
 
-						SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
+						if (get_map_space(map, adj_x, adj_y, z)->visible) {
+							SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
+
+							if (redraw_buffer) {
+								blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map->width, map->height));
+							}
+						} else {
+							SDL_SetTextureColorMod(texture_map[tile_id], 100, 100, 100);
+						}
 						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
 					}
 
-					if (has_entity(map, adj_x, adj_y, z)) {
+					if (has_entity(map, adj_x, adj_y, z) && get_map_space(map, adj_x, adj_y, z)->visible) {
                         u32 tile_id = get_map_entity(map, adj_x, adj_y, z)->sprite_id;
 
 						SDL_Rect dest;
@@ -443,12 +499,9 @@ int main() {
 						dest.y = ((((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + camera_pos_y) * scale) - dest.h;
 
 						if (redraw_buffer) {
-							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map_width, map_height));
+							blit_surface_to_click_buffer(scaled_surface_map[tile_id], &dest, click_map, screen_width, screen_height, threed_to_oned(adj_x, adj_y, z, map->width, map->height));
 						}
-
-						SDL_SetTextureColorMod(texture_map[tile_id], 255, 255, 255);
 						SDL_RenderCopy(renderer, texture_map[tile_id], NULL, &dest);
-
 					}
 				}
 			}
@@ -463,9 +516,9 @@ int main() {
 		SDL_RenderFillRect(renderer, &UI_frame);
 
 		u32 leftovers = 0;
-		for (u32 i = 0; i < p_map_idx; i++) {
-			u32 shim = screen_width / (p_map_idx * 3);
-            f32 box_pos = ((f32)(i + 1) / (f32)(p_map_idx + 1));
+		for (u32 i = 0; i < max_players; i++) {
+			u32 shim = screen_width / (max_players * 3);
+            f32 box_pos = ((f32)(i + 1) / (f32)(max_players + 1));
 			SDL_Rect player_data_box;
 			player_data_box.w = screen_width / 6;
 			player_data_box.h = UI_frame.h;
@@ -478,7 +531,7 @@ int main() {
 			player_healthbar_background.x = player_data_box.x;
 			player_healthbar_background.y = player_data_box.y + player_data_box.h - player_healthbar_background.h;
 
-			f32 player_health_perc = (f32)player_map[i]->cur_health / (f32)player_map[i]->max_health;
+			f32 player_health_perc = (f32)entity_map[i]->cur_health / (f32)entity_map[i]->max_health;
 
 			SDL_Rect player_healthbar;
 			player_healthbar.w = (u32)((f32)player_data_box.w * player_health_perc);
@@ -498,14 +551,14 @@ int main() {
 			player_turn_indicator.x = player_data_box.x;
 			player_turn_indicator.y = player_data_box.y;
 
-			if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == player_map[i]) {
+			if (get_map_entity(map, selected_char.x, selected_char.y, selected_char.z) == entity_map[i]) {
 				SDL_SetRenderDrawColor(renderer, 110, 110, 110, 255);
 			} else {
 				SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
 			}
 			SDL_RenderFillRect(renderer, &player_data_box);
 
-			SDL_RenderCopy(renderer, texture_map[player_map[i]->sprite_id], NULL, &player_image_box);
+			SDL_RenderCopy(renderer, texture_map[entity_map[i]->sprite_id], NULL, &player_image_box);
 
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 			SDL_RenderFillRect(renderer, &player_healthbar_background);
@@ -513,7 +566,7 @@ int main() {
 			SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
 			SDL_RenderFillRect(renderer, &player_healthbar);
 
-			if (player_map[i]->turn_points > 0) {
+			if (entity_map[i]->turn_points > 0) {
 				SDL_SetRenderDrawColor(renderer, 0, 90, 0, 255);
 			} else {
 				SDL_SetRenderDrawColor(renderer, 90, 0, 0, 255);
@@ -521,19 +574,21 @@ int main() {
 
 			SDL_RenderFillRect(renderer, &player_turn_indicator);
 
-			leftovers += player_map[i]->turn_points;
+			leftovers += entity_map[i]->turn_points;
 		}
 
 		if (leftovers == 0 && !travelling) {
 			puts("turn over");
-			for (u32 i = 0; i < p_map_idx; i++) {
-				player_map[i]->turn_points = 2;
+			for (u32 i = 0; i < entity_map_length; i++) {
+				if (entity_map[i] != NULL) {
+					entity_map[i]->turn_points = 2;
+				}
 			}
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-		redraw_buffer = 0;
+		redraw_buffer = false;
 		SDL_RenderPresent(renderer);
 	}
 

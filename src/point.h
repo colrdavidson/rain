@@ -95,9 +95,9 @@ Direction cycle_left(Direction dir) {
 
 int point_eq(Point a, Point b) {
 	if (a.x == b.x && a.y == b.y && a.z == b.z) {
-		return 0;
+		return true;
 	}
-	return 1;
+	return false;
 }
 
 Point new_point(u32 x, u32 y, u32 z) {

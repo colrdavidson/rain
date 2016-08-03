@@ -116,6 +116,68 @@ GridNode *new_nodemap(Map *map, u32 max_neighbors) {
 	return node_map;
 }
 
+void free_sightlist(SightNode **head) {
+	SightNode *tmp;
+	while (*head != NULL) {
+		tmp = *head;
+		*head = (*head)->next;
+		free(tmp);
+	}
+}
+
+void print_sightlist(SightNode *head) {
+	SightNode *tmp = head;
+	while (tmp != NULL) {
+		printf("(%d, %d, %d)\n", tmp->p.x, tmp->p.y, tmp->p.z);
+		tmp = tmp->next;
+	}
+}
+
+void push_node(SightNode **head, Point p) {
+	SightNode *tmp = malloc(sizeof(SightNode));
+	tmp->p = p;
+	tmp->next = *head;
+
+	*head = tmp;
+}
+
+void update_visible(Map *m, Entity *e, u8 visible) {
+	if (e == NULL) {
+		return;
+	}
+
+	Point p = e->pos;
+	free_sightlist(&e->vis_head);
+
+	i32 radius = e->sight_radius;
+	for (u32 z = 0; z < m->depth; z++) {
+		for (i32 y = -radius; y <= radius; y++) {
+			for (i32 x = -radius; x <= radius; x++) {
+				if ((x * x) + (y * y) <= (radius * radius)) {
+					WorldSpace *s = get_map_space(m, p.x + x, p.y + y, z);
+					if (s != NULL) {
+						push_node(&e->vis_head, new_point(p.x + x, p.y + y, z));
+						if (visible) {
+							get_map_space(m, p.x + x, p.y + y, z)->visible = true;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+u8 is_visible(Entity *e, Point p) {
+	SightNode *tmp = e->vis_head;
+	while (tmp != NULL) {
+		if (point_eq(tmp->p, p)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void qpush(QueueNode **head, QueueNode **tail, GridNode *tile) {
 	QueueNode *tmp = malloc(sizeof(QueueNode));
 	tmp->tile = tile;
@@ -225,7 +287,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 	path_head->p = goal;
 	path_head->next = NULL;
 
-    while (point_eq(path_head->p, start)) {
+    while (!point_eq(path_head->p, start)) {
 		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
         if (tmp == NULL) {
 			while (head != NULL) {
