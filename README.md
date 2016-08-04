@@ -12,4 +12,4 @@ build on OSX El Capitan.
 * q and e to rotate screen
 * arrow keys to move camera
 
-![Rain Visual Demo](simple_house.png)
+![Rain Visual Demo](lights.gif)
