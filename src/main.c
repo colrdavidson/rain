@@ -535,10 +535,15 @@ int main() {
 				player_healthbar.x = player_healthbar_background.x;
 				player_healthbar.y = player_healthbar_background.y;
 
+				u32 image_w = surface_map[entity_map[i]->sprite_id]->w;
+				u32 image_h = surface_map[entity_map[i]->sprite_id]->h;
+
+				f32 ratio = fmin((f32)player_data_box.w / (f32)image_w, (f32)(player_data_box.h - player_healthbar.h) / (f32)image_h);
+
 				SDL_Rect player_image_box;
-				player_image_box.w = player_data_box.w;
-				player_image_box.h = player_data_box.h - player_healthbar.h;
-				player_image_box.x = player_data_box.x;
+				player_image_box.w = ((f32)image_w * ratio);
+				player_image_box.h = ((f32)image_h * ratio);
+				player_image_box.x = player_data_box.x + ((f32)player_image_box.w / 2.0f);
 				player_image_box.y = player_data_box.y;
 
 				SDL_Rect player_turn_indicator;

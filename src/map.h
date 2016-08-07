@@ -201,7 +201,7 @@ void move_entity(Map *m, Point a, Point b) {
 
 void print_entity_map(Entity **entity_map, u32 map_length) {
 	for (u32 i = 0; i < map_length; i++) {
-		printf("[PEM-%d] %x\n", i, entity_map[i]);
+		printf("[PEM-%d] %p\n", i, entity_map[i]);
 	}
 }
 
