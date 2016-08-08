@@ -222,6 +222,7 @@ int main() {
 	f32 t = 0.0;
 
     u8 redraw_buffer = true;
+	u8 player_turn = true;
 	u8 travelling = false;
 
 	u8 running = 1;
@@ -248,7 +249,6 @@ int main() {
 			camera_imp_x -= camera_speed;
 			redraw_buffer = true;
 		}
-
 
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -292,7 +292,7 @@ int main() {
 						Point hover_p = new_point(p.x, p.y, p.z + 1);
 						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == player_idx && !travelling) {
 							selected_char = p;
-						} else if (can_move(map, selected_char, hover_p) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
+						} else if (player_turn && can_move(map, selected_char, hover_p) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
 							if (path == NULL && cur_pos == NULL) {
 								start = selected_char;
 								goal = p;
@@ -309,7 +309,7 @@ int main() {
 							}
 						}
 					} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-						if (has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
+						if (player_turn && has_entity(map, p.x, p.y, p.z) && get_map_entity(map, p.x, p.y, p.z)->sprite_id == enemy_idx && has_entity(map, selected_char.x, selected_char.y, selected_char.z) && get_map_entity(map, selected_char.x, selected_char.y, selected_char.z)->sprite_id == player_idx) {
 							Entity *player = get_map_entity(map, selected_char.x, selected_char.y, selected_char.z);
 							Entity *enemy = get_map_entity(map, p.x, p.y, p.z);
 
@@ -388,6 +388,34 @@ int main() {
 		}
 
 		t += dt;
+
+		if (!player_turn) {
+			for (u32 i = max_players; i < entity_map_length; i++) {
+				if (entity_map[i] != NULL) {
+					SightNode *tmp = entity_map[i]->vis_head;
+					u8 found = false;
+					while (tmp != NULL && !found) {
+						for (u32 p_idx = 0; p_idx < max_players && !found; p_idx++) {
+							if (entity_map[p_idx] != NULL && point_eq(entity_map[p_idx]->pos, tmp->p)) {
+								//printf("enemy (%d, %d, %d) firing @ player (%d, %d, %d)\n", entity_map[i]->pos.x, entity_map[i]->pos.y, entity_map[i]->pos.z, tmp->p.x, tmp->p.y, tmp->p.z);
+								fire_at_entity(map, entity_map, entity_map_length, entity_map[i], entity_map[p_idx], shoot_wav);
+								redraw_buffer = true;
+								found = true;
+							}
+						}
+						tmp = tmp->next;
+					}
+				}
+			}
+
+			for (u32 i = 0; i < max_players; i++) {
+				if (entity_map[i] != NULL) {
+					entity_map[i]->turn_points = 2;
+				}
+			}
+
+			player_turn = true;
+		}
 
 		/*
 		 * The directional tile system needs to be managed in the dynamic loader
@@ -511,12 +539,13 @@ int main() {
 		}
 
 		u32 leftovers = 0;
+		u32 remaining_players = 0;
 		for (u32 i = 0; i < max_players; i++) {
 			if (entity_map[i] != NULL) {
 				u32 shim = screen_width / (max_players * 3);
 				f32 box_pos = ((f32)(i + 1) / (f32)(max_players + 1));
 				SDL_Rect player_data_box;
-				player_data_box.w = screen_width / 6;
+				player_data_box.w = screen_width / 8;
 				player_data_box.h = UI_frame.h;
 				player_data_box.x = (u32)((f32)UI_frame.w * box_pos) - player_data_box.w + shim;
 				player_data_box.y = UI_frame.y + UI_frame.h - player_data_box.h;
@@ -543,12 +572,12 @@ int main() {
 				SDL_Rect player_image_box;
 				player_image_box.w = ((f32)image_w * ratio);
 				player_image_box.h = ((f32)image_h * ratio);
-				player_image_box.x = player_data_box.x + ((f32)player_image_box.w / 2.0f);
+				player_image_box.x = player_data_box.x + (player_data_box.w / 2) - (player_image_box.w / 2);
 				player_image_box.y = player_data_box.y;
 
 				SDL_Rect player_turn_indicator;
 				player_turn_indicator.w = player_data_box.w / 4;
-				player_turn_indicator.h = player_data_box.h / 4;
+				player_turn_indicator.h = player_data_box.w / 4;
 				player_turn_indicator.x = player_data_box.x;
 				player_turn_indicator.y = player_data_box.y;
 
@@ -580,32 +609,18 @@ int main() {
 				SDL_RenderFillRect(renderer, &player_turn_indicator);
 
 				leftovers += entity_map[i]->turn_points;
+				remaining_players++;
 			}
 		}
 
-		if (leftovers == 0 && !travelling) {
-			for (u32 i = 0; i < max_players; i++) {
+		if (leftovers == 0 && !travelling && remaining_players > 0) {
+			for (u32 i = max_players; i < max_enemies; i++) {
 				if (entity_map[i] != NULL) {
 					entity_map[i]->turn_points = 2;
 				}
 			}
 
-			for (u32 i = max_players; i < entity_map_length; i++) {
-				if (entity_map[i] != NULL) {
-					SightNode *tmp = entity_map[i]->vis_head;
-					u8 found = false;
-					while (tmp != NULL && !found) {
-						for (u32 p_idx = 0; p_idx < max_players && !found; p_idx++) {
-							if (entity_map[p_idx] != NULL && point_eq(entity_map[p_idx]->pos, tmp->p)) {
-								//printf("enemy (%d, %d, %d) firing @ player (%d, %d, %d)\n", enemy_pos.x, enemy_pos.y, enemy_pos.z, tmp->p.x, tmp->p.y, tmp->p.z);
-								fire_at_entity(map, entity_map, entity_map_length, entity_map[i], entity_map[p_idx], shoot_wav);
-								found = true;
-							}
-						}
-						tmp = tmp->next;
-					}
-				}
-			}
+			player_turn = false;
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -613,7 +628,6 @@ int main() {
 		redraw_buffer = false;
 		SDL_RenderPresent(renderer);
 	}
-
 
 	Image img;
     img.width = screen_width;
