@@ -54,24 +54,27 @@ void rescale_surfaces(SDL_Surface **surface_map, SDL_Surface **scaled_surface_ma
 }
 
 int main() {
-	u16 original_screen_width = 640;
-	u16 original_screen_height = 480;
+	i32 original_screen_width = 640;
+	i32 original_screen_height = 480;
     i32 screen_width;
     i32 screen_height;
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Init(SDL_INIT_AUDIO);
 	IMG_Init(IMG_INIT_PNG);
-	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_GL_GetDrawableSize(window, &screen_width, &screen_height);
 
+#define HIGHDPI 0
+#if HIGHDPI
+	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
+#else
+	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, 0);
+#endif
 
 	if (window == NULL) {
 		printf("!window: %s\n", SDL_GetError());
 		return 1;
 	}
 
-	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 	Mix_Init(0);
 	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
 	Mix_Chunk *shoot_wav = Mix_LoadWAV("assets/shoot.wav");
@@ -79,6 +82,12 @@ int main() {
 	//Mix_Music *music = Mix_LoadMUS("assets/rain.wav");
 
 	//Mix_PlayMusic(music, -1);
+
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+    SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
+
+	f32 scale_ratio = (f32)screen_width / (f32)original_screen_width;
+	printf("window scale ratio: %f\n", scale_ratio);
 
 	u32 click_map_size = screen_width * screen_height * sizeof(u16);
 	u16 *click_map = malloc(click_map_size);
@@ -192,17 +201,17 @@ int main() {
 
     Point selected_char = new_point(0, 0, 0);
 
-	f32 camera_pos_x = -35;
-	f32 camera_pos_y = screen_height / 2;
+	//f32 camera_pos_x = ((f32)screen_width / 2.0f) - ((f32)map_width / 2.0f);
+	f32 camera_pos_x = -10.0;
+	f32 camera_pos_y = 250.0;
 	f32 camera_vel_x = 0.0;
 	f32 camera_vel_y = 0.0;
 	f32 camera_imp_x = 0.0;
 	f32 camera_imp_y = 0.0;
 	f32 camera_speed = 2.0;
+
 	if (screen_width != original_screen_width) {
-		camera_pos_x = -10;
-		camera_pos_y = screen_height / 4;
-		scale = 2.0;
+		scale = scale_ratio;
 		rescale_surfaces(surface_map, scaled_surface_map, tile_entries, scale);
 	}
 
