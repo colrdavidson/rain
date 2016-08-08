@@ -63,7 +63,7 @@ int main() {
 	SDL_Init(SDL_INIT_AUDIO);
 	IMG_Init(IMG_INIT_PNG);
 
-#define HIGHDPI 0
+#define HIGHDPI 1
 #if HIGHDPI
 	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
 #else
