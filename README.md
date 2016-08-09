@@ -4,7 +4,7 @@ An noire isometric strategy game
 Rain's build script is currently setup to
 build on OSX El Capitan.
 
-* Requires SDL2, SDL2_image, and SDL2_mixer
+* Requires SDL2, SDL2_image, SDL2_mixer, and SDL2_ttf
 
 # Controls
 * click to select character and left click to set path destination, or right click on enemies to shoot
