@@ -264,10 +264,11 @@ void render_menu(MainMenu *m, Game* game, f32 dt) {
 	RainTitle.x = (game->screen_width / 2.0f) - ((f32)RainTitle.w / 2.0f);
 	RainTitle.y = (game->screen_height / 4.0f) - ((f32)RainTitle.h / 2.0f);
 
+	SDL_SetTextureColorMod(m->start_bg_tex, 100, 100, 100);
 	SDL_RenderCopy(game->renderer, m->start_bg_tex, NULL, &StartBackground);
 	SDL_RenderCopy(game->renderer, m->rain_tex, NULL, &RainTitle);
 
-	SDL_SetRenderDrawColor(game->renderer, 50, 50, 175, 220);
+	SDL_SetRenderDrawColor(game->renderer, 20, 50, 145, 220);
 	for (u32 i = 0; i < m->max_drops; i++) {
 		if (m->menu_animation) {
 			if (m->raindrops[i].y > UI_Frame.y - ((f32)UI_Frame.h / 2.0)) {
