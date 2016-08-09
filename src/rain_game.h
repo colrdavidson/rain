@@ -101,7 +101,7 @@ RainGame *init_rain_game(Game *game) {
 	printf("Map Size: %dx%dx%d\n", map_width, map_height, map_depth);
 
 	r->map = new_map(map_width, map_height, map_depth);
-	memset(game->click_map, r->map->size, game->screen_width * game->screen_height * sizeof(u16));
+	wipe_clickbuffer(game, r->map->size);
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
@@ -220,6 +220,12 @@ void transition_rain_game(RainGame *rain_game, Game *game) {
 	Camera *tmp_cam = rain_game->camera;
 	rain_game->camera = new_camera(-10.0, 250.0, 2.0, tmp_cam->scale, tmp_cam->direction);
 	free(tmp_cam);
+
+	wipe_clickbuffer(game, rain_game->map->size);
+	game->redraw_buffer = true;
+
+	rain_game->camera->scale *= game->rescale_x;
+	rescale_surfaces(((SDL_Surface **)rain_game->surface_map->arr), ((SDL_Surface **)rain_game->scaled_surface_map->arr), rain_game->tile_entries, rain_game->camera->scale);
 }
 
 void handle_rain_game_events(RainGame *rain_game, Game *game) {
@@ -258,7 +264,6 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 					case SDLK_ESCAPE: {
 						game->cur_state = MainMenuState;
 						game->transition = true;
-						game->redraw_buffer = true;
 					} break;
 					case SDLK_q: {
 						rain_game->camera->direction = cycle_left(rain_game->camera->direction);
@@ -321,6 +326,28 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 					}
 				}
 
+			} break;
+			case SDL_WINDOWEVENT: {
+				switch (event.window.event) {
+					case SDL_WINDOWEVENT_RESIZED: {
+						printf("resized! %d, %d\n", event.window.data1, event.window.data2);
+						i32 tmp_width;
+						i32 tmp_height;
+						SDL_GetRendererOutputSize(game->renderer, &tmp_width, &tmp_height);
+
+						game->rescale_x = (f32)tmp_width / (f32)game->screen_width;
+						game->rescale_y = (f32)tmp_height / (f32)game->screen_height;
+						game->screen_width = tmp_width;
+						game->screen_height = tmp_height;
+
+						wipe_clickbuffer(game, rain_game->map->size);
+
+						rain_game->camera->scale *= game->rescale_x;
+						rescale_surfaces(((SDL_Surface **)rain_game->surface_map->arr), ((SDL_Surface **)rain_game->scaled_surface_map->arr), rain_game->tile_entries, rain_game->camera->scale);
+
+						game->redraw_buffer = true;
+					} break;
+				}
 			} break;
 			case SDL_QUIT: {
 				game->running = false;

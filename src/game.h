@@ -14,6 +14,9 @@ typedef struct Game {
 	u32 screen_height;
 	u32 dpi_ratio;
 
+	f32 rescale_x;
+	f32 rescale_y;
+
     u8 redraw_buffer;
 	u16 *click_map;
 
@@ -35,6 +38,8 @@ Game *new_game(SDL_Window *window, SDL_Renderer *renderer, u32 screen_width, u32
 	g->running = true;
 	g->transition = false;
 	g->cur_state = MainMenuState;
+	g->rescale_x = 1.0;
+	g->rescale_y = 1.0;
 
 	u32 click_map_size = g->screen_width * g->screen_height * sizeof(u16);
 	g->click_map = malloc(click_map_size);
@@ -43,10 +48,10 @@ Game *new_game(SDL_Window *window, SDL_Renderer *renderer, u32 screen_width, u32
 	return g;
 }
 
-void wipe_clickbuffer(Game *game) {
+void wipe_clickbuffer(Game *game, u64 value) {
 	u32 click_map_size = game->screen_width * game->screen_height * sizeof(u16);
 	game->click_map = realloc(game->click_map, click_map_size);
-	memset(game->click_map, 0, click_map_size);
+	memset(game->click_map, value, click_map_size);
 }
 
 void blit_surface_to_click_buffer(SDL_Surface *surface, SDL_Rect *screen_rel_rect, u16 *click_map, u32 screen_width, u32 screen_height, u32 tile_num) {

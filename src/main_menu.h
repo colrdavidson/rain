@@ -92,6 +92,11 @@ MainMenu *init_main_menu(Game *game) {
 	return m;
 }
 
+void transition_main_menu(MainMenu *main_menu, Game *game) {
+	wipe_clickbuffer(game, 0);
+	game->redraw_buffer = true;
+}
+
 void handle_main_menu_events(MainMenu *main_menu, Game *game) {
 	SDL_Event event;
 
@@ -131,7 +136,6 @@ void handle_main_menu_events(MainMenu *main_menu, Game *game) {
 						case 1: {
 							game->cur_state = RainGameState;
 							game->transition = true;
-							game->redraw_buffer = true;
 						} break;
 						case 2: {
 							main_menu->options_selected = true;
@@ -172,27 +176,27 @@ void handle_main_menu_events(MainMenu *main_menu, Game *game) {
 						i32 tmp_width;
 						i32 tmp_height;
 						SDL_GetRendererOutputSize(game->renderer, &tmp_width, &tmp_height);
-						f32 rescale_x = (f32)tmp_width / (f32)game->screen_width;
-						f32 rescale_y = (f32)tmp_height / (f32)game->screen_height;
+						game->rescale_x = (f32)tmp_width / (f32)game->screen_width;
+						game->rescale_y = (f32)tmp_height / (f32)game->screen_height;
 						game->screen_width = tmp_width;
 						game->screen_height = tmp_height;
 
-						wipe_clickbuffer(game);
+						wipe_clickbuffer(game, 0);
 
 						for (u32 i = 0; i < main_menu->max_drops; i++) {
 							main_menu->raindrops[i].x = ((f32)game->screen_width / (f32)main_menu->max_drops) * (rand() % main_menu->max_drops);
-							main_menu->raindrops[i].w = (f32)main_menu->raindrops[i].w * rescale_x;
-							main_menu->raindrops[i].h = (f32)main_menu->raindrops[i].h * rescale_y;
+							main_menu->raindrops[i].w = (f32)main_menu->raindrops[i].w * game->rescale_x;
+							main_menu->raindrops[i].h = (f32)main_menu->raindrops[i].h * game->rescale_y;
 						}
-						main_menu->drop_speed *= rescale_y;
+						main_menu->drop_speed *= game->rescale_y;
 
 						for (u32 i = 0; i < main_menu->max_walkers; i++) {
 							main_menu->walkers[i].x = ((f32)game->screen_width / (f32)main_menu->max_walkers) * (rand() % main_menu->max_walkers);
-							main_menu->walkers[i].y = (f32)main_menu->walkers[i].y * rescale_y;
-							main_menu->walkers[i].w = (f32)main_menu->walkers[i].w * rescale_x;
-							main_menu->walkers[i].h = (f32)main_menu->walkers[i].h * rescale_y;
+							main_menu->walkers[i].y = (f32)main_menu->walkers[i].y * game->rescale_y;
+							main_menu->walkers[i].w = (f32)main_menu->walkers[i].w * game->rescale_x;
+							main_menu->walkers[i].h = (f32)main_menu->walkers[i].h * game->rescale_y;
 						}
-						main_menu->walk_speed *= rescale_x;
+						main_menu->walk_speed *= game->rescale_x;
 
 						game->redraw_buffer = true;
 					} break;

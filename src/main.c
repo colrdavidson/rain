@@ -66,7 +66,7 @@ int main() {
 		if (game->transition) {
 			switch (game->cur_state) {
 				case MainMenuState: {
-					// Update menu
+					transition_main_menu(main_menu, game);
 				} break;
 				case RainGameState: {
 					transition_rain_game(rain_game, game);
