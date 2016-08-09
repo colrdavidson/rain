@@ -48,7 +48,7 @@ Game *new_game(SDL_Window *window, SDL_Renderer *renderer, u32 screen_width, u32
 	return g;
 }
 
-void wipe_clickbuffer(Game *game, u64 value) {
+void wipe_clickbuffer(Game *game, u16 value) {
 	u32 click_map_size = game->screen_width * game->screen_height * sizeof(u16);
 	game->click_map = realloc(game->click_map, click_map_size);
 	memset(game->click_map, value, click_map_size);

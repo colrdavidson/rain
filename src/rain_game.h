@@ -101,7 +101,6 @@ RainGame *init_rain_game(Game *game) {
 	printf("Map Size: %dx%dx%d\n", map_width, map_height, map_depth);
 
 	r->map = new_map(map_width, map_height, map_depth);
-	wipe_clickbuffer(game, r->map->size);
 
 	fgets(line, 256, fp);
 	fgets(line, 256, fp);
