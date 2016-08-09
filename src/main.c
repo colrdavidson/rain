@@ -97,7 +97,6 @@ int main() {
 			} break;
 		}
 
-
 		game->redraw_buffer = false;
 		SDL_RenderPresent(renderer);
 	}

@@ -2,7 +2,8 @@
 #define MAIN_MENU_H
 
 typedef struct MainMenu {
-	TTF_Font *font;
+	TTF_Font *button_font;
+	TTF_Font *title_font;
 	SDL_Color font_color;
 
 	SDL_Surface *start_surf;
@@ -12,6 +13,7 @@ typedef struct MainMenu {
 	SDL_Surface *windowed_surf;
 	SDL_Surface *menu_anim_surf;
 	SDL_Surface *start_bg_surf;
+	SDL_Surface *rain_surf;
 
 	SDL_Texture *start_tex;
 	SDL_Texture *options_tex;
@@ -20,6 +22,7 @@ typedef struct MainMenu {
 	SDL_Texture *windowed_tex;
 	SDL_Texture *menu_anim_tex;
 	SDL_Texture *start_bg_tex;
+	SDL_Texture *rain_tex;
 
 	u32 max_drops;
 	f32 drop_speed;
@@ -37,16 +40,17 @@ typedef struct MainMenu {
 MainMenu *init_main_menu(Game *game) {
 	MainMenu *m = malloc(sizeof(MainMenu));
 
-	m->font = TTF_OpenFont("assets/greenscr.ttf", 48);
+	m->button_font = TTF_OpenFont("assets/greenscr.ttf", 48);
+	m->title_font = TTF_OpenFont("assets/din_reg.ttf", 200);
 	SDL_Color c = { 255, 255, 255, 255 };
 	m->font_color = c;
 
-	m->start_surf = TTF_RenderText_Solid(m->font, "Start", m->font_color);
-	m->options_surf = TTF_RenderText_Solid(m->font, "Options", m->font_color);
-	m->exit_surf = TTF_RenderText_Solid(m->font, "Exit", m->font_color);
-	m->fullscreen_surf = TTF_RenderText_Solid(m->font, "Fullscreen", m->font_color);
-	m->windowed_surf = TTF_RenderText_Solid(m->font, "Windowed", m->font_color);
-	m->menu_anim_surf = TTF_RenderText_Solid(m->font, "Animation", m->font_color);
+	m->start_surf = TTF_RenderText_Solid(m->button_font, "Start", m->font_color);
+	m->options_surf = TTF_RenderText_Solid(m->button_font, "Options", m->font_color);
+	m->exit_surf = TTF_RenderText_Solid(m->button_font, "Exit", m->font_color);
+	m->fullscreen_surf = TTF_RenderText_Solid(m->button_font, "Fullscreen", m->font_color);
+	m->windowed_surf = TTF_RenderText_Solid(m->button_font, "Windowed", m->font_color);
+	m->menu_anim_surf = TTF_RenderText_Solid(m->button_font, "Animation", m->font_color);
 
 	m->start_tex = SDL_CreateTextureFromSurface(game->renderer, m->start_surf);
 	m->options_tex = SDL_CreateTextureFromSurface(game->renderer, m->options_surf);
@@ -54,6 +58,9 @@ MainMenu *init_main_menu(Game *game) {
 	m->fullscreen_tex = SDL_CreateTextureFromSurface(game->renderer, m->fullscreen_surf);
 	m->windowed_tex = SDL_CreateTextureFromSurface(game->renderer, m->windowed_surf);
 	m->menu_anim_tex = SDL_CreateTextureFromSurface(game->renderer, m->menu_anim_surf);
+
+	m->rain_surf = TTF_RenderText_Solid(m->title_font, "Rain", m->font_color);
+	m->rain_tex = SDL_CreateTextureFromSurface(game->renderer, m->rain_surf);
 
 	m->start_bg_surf = IMG_Load("assets/beat.png");
 	m->start_bg_tex = SDL_CreateTextureFromSurface(game->renderer, m->start_bg_surf);
@@ -247,7 +254,14 @@ void render_menu(MainMenu *m, Game* game, f32 dt) {
 	ExitButtonText.x = ExitButton.x + ((f32)ExitButton.w / 2.0f) - ((f32)ExitButtonText.w / 2.0f);
 	ExitButtonText.y = ExitButton.y + ((f32)ExitButton.h / 2.0f) - ((f32)ExitButtonText.h / 2.0f);
 
+	SDL_Rect RainTitle;
+	RainTitle.w = m->rain_surf->clip_rect.w;
+	RainTitle.h = m->rain_surf->clip_rect.h;
+	RainTitle.x = (game->screen_width / 2.0f) - ((f32)RainTitle.w / 2.0f);
+	RainTitle.y = (game->screen_height / 4.0f) - ((f32)RainTitle.h / 2.0f);
+
 	SDL_RenderCopy(game->renderer, m->start_bg_tex, NULL, &StartBackground);
+	SDL_RenderCopy(game->renderer, m->rain_tex, NULL, &RainTitle);
 
 	SDL_SetRenderDrawColor(game->renderer, 50, 50, 175, 220);
 	for (u32 i = 0; i < m->max_drops; i++) {
