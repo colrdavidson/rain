@@ -270,17 +270,17 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 						game->redraw_buffer = true;
 					} break;
 					case SDLK_1: {
-						rain_game->camera->scale = 1.0;
+						rain_game->camera->scale = 1.0 * game->rescale_x;
 						rescale_surfaces(((SDL_Surface **)rain_game->surface_map->arr), ((SDL_Surface **)rain_game->scaled_surface_map->arr), rain_game->tile_entries, rain_game->camera->scale);
 						game->redraw_buffer = true;
 					} break;
 					case SDLK_2: {
-						rain_game->camera->scale = 2.0;
+						rain_game->camera->scale = 2.0 * game->rescale_x;
 						rescale_surfaces(((SDL_Surface **)rain_game->surface_map->arr), ((SDL_Surface **)rain_game->scaled_surface_map->arr), rain_game->tile_entries, rain_game->camera->scale);
 						game->redraw_buffer = true;
 					} break;
 					case SDLK_3: {
-						rain_game->camera->scale = 3.0;
+						rain_game->camera->scale = 3.0 * game->rescale_x;
 						rescale_surfaces(((SDL_Surface **)rain_game->surface_map->arr), ((SDL_Surface **)rain_game->scaled_surface_map->arr), rain_game->tile_entries, rain_game->camera->scale);
 						game->redraw_buffer = true;
 					} break;
@@ -557,12 +557,10 @@ void render_rain_game(RainGame *rain_game, Game *game) {
 	u32 remaining_players = 0;
 	for (u32 i = 0; i < rain_game->max_players; i++) {
 		if (rain_game->entity_map[i] != NULL) {
-			u32 shim = game->screen_width / (rain_game->max_players * 3);
-			f32 box_pos = ((f32)(i + 1) / (f32)(rain_game->max_players + 1));
 			SDL_Rect player_data_box;
-			player_data_box.w = game->screen_width / 8;
+			player_data_box.w = UI_frame.w / 8;
 			player_data_box.h = UI_frame.h;
-			player_data_box.x = (u32)((f32)UI_frame.w * box_pos) - player_data_box.w + shim;
+			player_data_box.x = (((f32)UI_frame.w / ((f32)rain_game->max_players + 1)) * (i + 1)) - ((f32)player_data_box.w / 2.0f);
 			player_data_box.y = UI_frame.y + UI_frame.h - player_data_box.h;
 
 			SDL_Rect player_healthbar_background;

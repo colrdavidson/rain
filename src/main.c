@@ -25,7 +25,7 @@ int main() {
 	TTF_Init();
 	srand(time(NULL));
 
-	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window *window = SDL_CreateWindow("Rain", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, original_screen_width, original_screen_height, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
 
 	if (window == NULL) {
 		printf("!window: %s\n", SDL_GetError());
@@ -108,6 +108,7 @@ int main() {
 	img.data = (Color *)game->click_map;
 	write_tga("test.tga", &img);
 
+	TTF_Quit();
 	IMG_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
