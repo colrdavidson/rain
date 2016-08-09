@@ -378,7 +378,7 @@ void update_map(RainGame *rain_game, Game *game, f32 *t, f32 dt) {
 	*t += dt;
 
 	if (game->redraw_buffer) {
-		memset(game->click_map, rain_game->map->size, game->screen_width * game->screen_height * sizeof(u16));
+		wipe_clickbuffer(game, rain_game->map->size);
 	}
 
 	u8 redraw_lights = false;
