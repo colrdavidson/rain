@@ -41,9 +41,8 @@ Game *new_game(SDL_Window *window, SDL_Renderer *renderer, u32 screen_width, u32
 	g->rescale_x = 1.0;
 	g->rescale_y = 1.0;
 
-	u32 click_map_size = g->screen_width * g->screen_height * sizeof(u16);
-	g->click_map = malloc(click_map_size);
-	memset(g->click_map, 0, click_map_size);
+	u32 click_map_size = g->screen_width * g->screen_height;
+	g->click_map = calloc(click_map_size, sizeof(u16));
 
 	return g;
 }

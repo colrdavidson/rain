@@ -19,6 +19,11 @@ typedef struct QueueNode {
 	struct QueueNode *next;
 } QueueNode;
 
+typedef struct Queue {
+	QueueNode *head;
+	QueueNode *tail;
+} Queue;
+
 typedef struct PathNode {
 	Point p;
 	struct PathNode *next;
@@ -178,43 +183,64 @@ u8 is_visible(Entity *e, Point p) {
 	return false;
 }
 
-void qpush(QueueNode **head, QueueNode **tail, GridNode *tile) {
+void qpush(Queue *q, GridNode *tile) {
 	QueueNode *tmp = malloc(sizeof(QueueNode));
 	tmp->tile = tile;
 	tmp->next = NULL;
 
-	if (*tail == NULL) {
-		*tail = tmp;
+	if (q->tail == NULL && q->head == NULL) {
+		q->tail = tmp;
+		q->head = q->tail;
 	} else {
-		(*tail)->next = tmp;
-		*tail = tmp;
-	}
-
-	if (*head == NULL) {
-		*head = *tail;
+		if (q->head == q->tail) {
+			q->tail->next = tmp;
+			q->tail = tmp;
+			q->head->next = q->tail;
+		} else {
+			q->tail->next = tmp;
+			q->tail = tmp;
+		}
 	}
 }
 
-GridNode *qpop(QueueNode **head) {
-	if (*head == NULL) {
+GridNode *qpop(Queue *q) {
+	if (q->head == NULL && q->tail == NULL) {
 		printf("empty queue!\n");
 		return NULL;
 	}
 
-	QueueNode *tmp = (*head)->next;
-	GridNode *tile = (*head)->tile;
+	QueueNode *tmp = q->head->next;
+	GridNode *tile = q->head->tile;
 
-	free(*head);
-	*head = tmp;
+
+	if (q->head == q->tail) {
+		q->tail = NULL;
+	}
+
+	free(q->head);
+	q->head = tmp;
 
 	return tile;
 }
 
-void qprint(QueueNode *head) {
-	QueueNode *tmp = head;
+void qprint(Queue *q) {
+	QueueNode *tmp = q->head;
 	while (tmp != NULL) {
 		printf("%d\n", tmp->tile->tile_pos);
 		tmp = tmp->next;
+	}
+}
+
+Queue *new_queue() {
+	Queue *q = (Queue *)malloc(sizeof(Queue));
+	q->head = NULL;
+	q->tail = NULL;
+	return q;
+}
+
+void q_free(Queue *q) {
+	while (q->head != NULL) {
+		qpop(q);
 	}
 }
 
@@ -259,16 +285,14 @@ void lprint(PathNode *head) {
 }
 
 PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, u32 map_height, u32 map_depth, u32 max_neighbors) {
-	QueueNode *head = NULL;
-	QueueNode *tail = NULL;
-	GridNode **from = malloc(map_width * map_height * map_depth * sizeof(GridNode));
-	memset(from, 0, map_width * map_height * map_depth * sizeof(GridNode));
+	Queue *q = new_queue();
+	GridNode **from = calloc(map_width * map_height * map_depth, sizeof(GridNode));
 
-	qpush(&head, &tail, &node_map[threed_to_oned(start.x, start.y, start.z, map_width, map_height)]);
+	qpush(q, &node_map[threed_to_oned(start.x, start.y, start.z, map_width, map_height)]);
 	from[threed_to_oned(start.x, start.y, start.z, map_width, map_height)] = NULL;
 
-	while (head != NULL && tail != NULL) {
-		GridNode *cur_tile = qpop(&head);
+	while (q->head != NULL && q->tail != NULL) {
+		GridNode *cur_tile = qpop(q);
 
 		if (cur_tile->tile_pos == threed_to_oned(goal.x, goal.y, goal.z, map_width, map_height)) {
 			break;
@@ -276,7 +300,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 
 		for (u32 i = 0; i < max_neighbors; i++) {
 			if (cur_tile->neighbors[i] != NULL && !from[cur_tile->neighbors[i]->tile_pos] && !cur_tile->neighbors[i]->w->solid) {
-				qpush(&head, &tail, cur_tile->neighbors[i]);
+				qpush(q, cur_tile->neighbors[i]);
 
 				from[cur_tile->neighbors[i]->tile_pos] = cur_tile;
 			}
@@ -290,8 +314,8 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
     while (!point_eq(path_head->p, start)) {
 		GridNode *tmp = from[threed_to_oned(path_head->p.x, path_head->p.y, path_head->p.z, map_height, map_width)];
         if (tmp == NULL) {
-			while (head != NULL) {
-				qpop(&head);
+			while (q->head != NULL) {
+				qpop(q);
 			}
 			free(from);
 			return NULL;
@@ -300,9 +324,7 @@ PathNode *find_path(Point start, Point goal, GridNode *node_map, u32 map_width, 
 		lappend(&path_head, oned_to_threed(tmp->tile_pos, map_width, map_height));
 	}
 
-	while (head != NULL) {
-		qpop(&head);
-	}
+	q_free(q);
 	free(from);
 
 	return path_head;

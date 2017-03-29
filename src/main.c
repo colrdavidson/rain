@@ -3,6 +3,7 @@
 #include "SDL2/SDL_mixer.h"
 #include "SDL2/SDL_ttf.h"
 #include <stdio.h>
+#include <time.h>
 
 #include "common.h"
 #include "tga.h"

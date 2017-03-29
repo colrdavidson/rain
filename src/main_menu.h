@@ -4,7 +4,8 @@
 typedef struct MainMenu {
 	TTF_Font *button_font;
 	TTF_Font *title_font;
-	SDL_Color font_color;
+	SDL_Color button_font_color;
+	SDL_Color title_font_color;
 
 	SDL_Surface *start_surf;
 	SDL_Surface *options_surf;
@@ -42,15 +43,17 @@ MainMenu *init_main_menu(Game *game) {
 
 	m->button_font = TTF_OpenFont("assets/greenscr.ttf", 48);
 	m->title_font = TTF_OpenFont("assets/din_reg.ttf", 200);
-	SDL_Color c = { 255, 255, 255, 255 };
-	m->font_color = c;
+	SDL_Color c1 = { 255, 255, 255, 255 };
+	SDL_Color c2 = { 255, 255, 255, 0 };
+	m->button_font_color = c1;
+	m->title_font_color = c2;
 
-	m->start_surf = TTF_RenderText_Solid(m->button_font, "Start", m->font_color);
-	m->options_surf = TTF_RenderText_Solid(m->button_font, "Options", m->font_color);
-	m->exit_surf = TTF_RenderText_Solid(m->button_font, "Exit", m->font_color);
-	m->fullscreen_surf = TTF_RenderText_Solid(m->button_font, "Fullscreen", m->font_color);
-	m->windowed_surf = TTF_RenderText_Solid(m->button_font, "Windowed", m->font_color);
-	m->menu_anim_surf = TTF_RenderText_Solid(m->button_font, "Animation", m->font_color);
+	m->start_surf = TTF_RenderText_Solid(m->button_font, "Start", m->button_font_color);
+	m->options_surf = TTF_RenderText_Solid(m->button_font, "Options", m->button_font_color);
+	m->exit_surf = TTF_RenderText_Solid(m->button_font, "Exit", m->button_font_color);
+	m->fullscreen_surf = TTF_RenderText_Solid(m->button_font, "Fullscreen", m->button_font_color);
+	m->windowed_surf = TTF_RenderText_Solid(m->button_font, "Windowed", m->button_font_color);
+	m->menu_anim_surf = TTF_RenderText_Solid(m->button_font, "Animation", m->button_font_color);
 
 	m->start_tex = SDL_CreateTextureFromSurface(game->renderer, m->start_surf);
 	m->options_tex = SDL_CreateTextureFromSurface(game->renderer, m->options_surf);
@@ -59,7 +62,7 @@ MainMenu *init_main_menu(Game *game) {
 	m->windowed_tex = SDL_CreateTextureFromSurface(game->renderer, m->windowed_surf);
 	m->menu_anim_tex = SDL_CreateTextureFromSurface(game->renderer, m->menu_anim_surf);
 
-	m->rain_surf = TTF_RenderText_Solid(m->title_font, "Rain", m->font_color);
+	m->rain_surf = TTF_RenderText_Blended(m->title_font, "Rain", m->title_font_color);
 	m->rain_tex = SDL_CreateTextureFromSurface(game->renderer, m->rain_surf);
 
 	m->start_bg_surf = IMG_Load("assets/beat.png");

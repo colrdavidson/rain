@@ -118,7 +118,7 @@ void print_point(Point p) {
 }
 
 f32 lerp(f32 t, f32 start, f32 end) {
-	return (1.0 - t) * start + (t * end);
+	return (1.0f - t) * start + (t * end);
 }
 
 #endif

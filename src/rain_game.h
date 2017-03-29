@@ -41,7 +41,6 @@ Camera *new_camera(f32 pos_x, f32 pos_y, f32 speed, f32 scale, Direction dir) {
 	return c;
 }
 
-
 typedef struct RainGame {
 	Map *map;
 	Camera *camera;
@@ -73,15 +72,24 @@ typedef struct RainGame {
 
 	u8 player_turn;
 	u8 travelling;
+	u8 scrolling;
 } RainGame;
 
-void update_camera(Camera *camera, f32 friction, f32 dt) {
+void update_camera(Game *game, RainGame *rain_game, f32 friction, f32 dt) {
+	Camera *camera = rain_game->camera;
 	f32 x_acc = friction * camera->vel_x + camera->imp_x;
 	f32 y_acc = friction * camera->vel_y + camera->imp_y;
 	camera->pos_x = (0.5 * x_acc * dt * dt) + camera->vel_x * dt + camera->pos_x;
 	camera->pos_y = (0.5 * y_acc * dt * dt) + camera->vel_y * dt + camera->pos_y;
 	camera->vel_x = (x_acc * dt) + camera->vel_x;
 	camera->vel_y = (y_acc * dt) + camera->vel_y;
+
+	if (camera->vel_x + camera->vel_y < 0.1f && rain_game->scrolling) {
+		rain_game->scrolling = false;
+
+		wipe_clickbuffer(game, rain_game->map->size);
+		game->redraw_buffer = true;
+	}
 }
 
 RainGame *init_rain_game(Game *game) {
@@ -199,6 +207,7 @@ RainGame *init_rain_game(Game *game) {
 
 	r->player_turn = true;
 	r->travelling = false;
+	r->scrolling = false;
 
 	if (game->dpi_ratio != 1.0f) {
 		r->camera->scale = game->dpi_ratio;
@@ -237,18 +246,22 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 	const u8 *state = SDL_GetKeyboardState(NULL);
 	if (state[SDL_SCANCODE_UP]) {
 		rain_game->camera->imp_y += rain_game->camera->speed;
+		rain_game->scrolling = true;
 		game->redraw_buffer = true;
 	}
 	if (state[SDL_SCANCODE_DOWN]) {
 		rain_game->camera->imp_y -= rain_game->camera->speed;
+		rain_game->scrolling = true;
 		game->redraw_buffer = true;
 	}
 	if (state[SDL_SCANCODE_LEFT]) {
 		rain_game->camera->imp_x += rain_game->camera->speed;
+		rain_game->scrolling = true;
 		game->redraw_buffer = true;
 	}
 	if (state[SDL_SCANCODE_RIGHT]) {
 		rain_game->camera->imp_x -= rain_game->camera->speed;
+		rain_game->scrolling = true;
 		game->redraw_buffer = true;
 	}
 
@@ -294,7 +307,7 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 
 				Point p = oned_to_threed(game->click_map[twod_to_oned(mouse_x, mouse_y, game->screen_width)], rain_game->map->width, rain_game->map->height);
 
-				if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+				if ((buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) && !rain_game->scrolling) {
 					Point hover_p = new_point(p.x, p.y, p.z + 1);
 					if (has_entity(rain_game->map, p.x, p.y, p.z) && get_map_entity(rain_game->map, p.x, p.y, p.z)->sprite_id == rain_game->player_idx && !rain_game->travelling) {
 						rain_game->selected_char = p;
@@ -314,7 +327,7 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 							}
 						}
 					}
-				} else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+				} else if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && !rain_game->scrolling) {
 					if (rain_game->player_turn && has_entity(rain_game->map, p.x, p.y, p.z) && get_map_entity(rain_game->map, p.x, p.y, p.z)->sprite_id == rain_game->enemy_idx && has_entity(rain_game->map, rain_game->selected_char.x, rain_game->selected_char.y, rain_game->selected_char.z) && get_map_entity(rain_game->map, rain_game->selected_char.x, rain_game->selected_char.y, rain_game->selected_char.z)->sprite_id == rain_game->player_idx) {
 						Entity *player = get_map_entity(rain_game->map, rain_game->selected_char.x, rain_game->selected_char.y, rain_game->selected_char.z);
 						Entity *enemy = get_map_entity(rain_game->map, p.x, p.y, p.z);
@@ -356,7 +369,7 @@ void handle_rain_game_events(RainGame *rain_game, Game *game) {
 }
 
 void update_map(RainGame *rain_game, Game *game, f32 *t, f32 dt) {
-	update_camera(rain_game->camera, -0.2, dt);
+	update_camera(game, rain_game, -0.2, dt);
 
 	if (rain_game->cur_pos != NULL) {
 		if (*t > 3.0) {
@@ -626,7 +639,7 @@ void render_rain_game(RainGame *rain_game, Game *game) {
 	}
 
 	if (leftovers == 0 && !rain_game->travelling && remaining_players > 0) {
-		for (u32 i = rain_game->max_players; i < rain_game->max_enemies; i++) {
+		for (u32 i = rain_game->max_players; i < rain_game->entity_map_length; i++) {
 			if (rain_game->entity_map[i] != NULL) {
 				rain_game->entity_map[i]->turn_points = 2;
 			}
