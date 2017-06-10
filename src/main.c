@@ -15,8 +15,8 @@
 #include "rain_game.h"
 
 int main() {
-	i32 original_screen_width = 640;
-	i32 original_screen_height = 480;
+	i32 original_screen_width = 1280;
+	i32 original_screen_height = 720;
     i32 screen_width;
     i32 screen_height;
 
@@ -42,6 +42,7 @@ int main() {
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
 	f32 scale_ratio = (f32)screen_width / (f32)original_screen_width;
+	printf("scale ratio: %f\n", scale_ratio);
 
 	Game *game = new_game(window, renderer, screen_width, screen_height, scale_ratio);
 	MainMenu *main_menu = init_main_menu(game);

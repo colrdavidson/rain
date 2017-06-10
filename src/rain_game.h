@@ -142,7 +142,7 @@ RainGame *init_rain_game(Game *game) {
 	r->surface_map->arr[r->enemy_idx] = IMG_Load("assets/enemy_cylinder.png");
 	r->texture_map->arr[r->enemy_idx] = SDL_CreateTextureFromSurface(game->renderer, r->surface_map->arr[r->enemy_idx]);
 
-	r->camera = new_camera(-10.0, 250.0, 2.0, 1.0, NORTH);
+	r->camera = new_camera((((f32)game->screen_width) / ((f32)map_width * (16.0 / 9.0))) + (8.0 * 2.0), 250.0, 2.0, 3.0, NORTH);
 
 	for (u32 i = 1; i < r->tile_entries; i++) {
 		i32 tile_width, tile_height;
@@ -209,11 +209,6 @@ RainGame *init_rain_game(Game *game) {
 	r->travelling = false;
 	r->scrolling = false;
 
-	if (game->dpi_ratio != 1.0f) {
-		r->camera->scale = game->dpi_ratio;
-		rescale_surfaces(((SDL_Surface **)r->surface_map->arr), ((SDL_Surface **)r->scaled_surface_map->arr), r->tile_entries, r->camera->scale);
-	}
-
 	r->max_neighbors = 10;
 	r->node_map = new_nodemap(r->map, r->max_neighbors);
 
@@ -225,10 +220,6 @@ RainGame *init_rain_game(Game *game) {
 }
 
 void transition_rain_game(RainGame *rain_game, Game *game) {
-	Camera *tmp_cam = rain_game->camera;
-	rain_game->camera = new_camera(-10.0, 250.0, 2.0, tmp_cam->scale, tmp_cam->direction);
-	free(tmp_cam);
-
 	wipe_clickbuffer(game, rain_game->map->size);
 	game->redraw_buffer = true;
 
@@ -537,13 +528,35 @@ void render_rain_game(RainGame *rain_game, Game *game) {
 				}
 
 				if (has_entity(rain_game->map, adj_x, adj_y, z) && get_map_space(rain_game->map, adj_x, adj_y, z)->visible) {
-					u32 tile_id = get_map_entity(rain_game->map, adj_x, adj_y, z)->sprite_id;
+					Entity *e = get_map_entity(rain_game->map, adj_x, adj_y, z);
+					u32 tile_id = e->sprite_id;
 
 					SDL_Rect dest;
 					dest.w = (i32)(((f32)((SDL_Surface *)rain_game->surface_map->arr[tile_id])->w) * rain_game->camera->scale);
 					dest.h = (i32)(((f32)((SDL_Surface *)rain_game->surface_map->arr[tile_id])->h) * rain_game->camera->scale);
 					dest.x = (((cam_adj_x + cam_adj_y) * 16.0) + rain_game->camera->pos_x) * rain_game->camera->scale;
 					dest.y = ((((cam_adj_x - cam_adj_y) * 8.0) - (16.0 * (f32)z) + rain_game->camera->pos_y) * rain_game->camera->scale) - dest.h;
+
+					if (tile_id == rain_game->enemy_idx) {
+						SDL_Rect enemy_healthbar_background;
+						enemy_healthbar_background.w = 30 * rain_game->camera->scale;
+						enemy_healthbar_background.h = 9 * rain_game->camera->scale;
+						enemy_healthbar_background.x = dest.x;
+						enemy_healthbar_background.y = dest.y;
+						SDL_SetRenderDrawColor(game->renderer, 40, 40, 40, 255);
+						SDL_RenderFillRect(game->renderer, &enemy_healthbar_background);
+
+						f32 enemy_health_perc = (f32)e->cur_health / (f32)e->max_health;
+						f32 max_health_width = 25 * rain_game->camera->scale;
+
+						SDL_Rect enemy_healthbar;
+						enemy_healthbar.w = max_health_width * enemy_health_perc;
+						enemy_healthbar.h = 4 * rain_game->camera->scale;
+						enemy_healthbar.x = enemy_healthbar_background.x - (((f32)(max_health_width - enemy_healthbar_background.w)) / 2.0);
+						enemy_healthbar.y = enemy_healthbar_background.y - (((f32)(enemy_healthbar.h - enemy_healthbar_background.h)) / 2.0);
+						SDL_SetRenderDrawColor(game->renderer, 0, 90, 0, 255);
+						SDL_RenderFillRect(game->renderer, &enemy_healthbar);
+					}
 
 					if (game->redraw_buffer) {
 						blit_surface_to_click_buffer(((SDL_Surface *)rain_game->scaled_surface_map->arr[tile_id]), &dest, game->click_map, game->screen_width, game->screen_height, threed_to_oned(adj_x, adj_y, z, rain_game->map->width, rain_game->map->height));
