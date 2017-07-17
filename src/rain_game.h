@@ -411,10 +411,13 @@ void update_map(RainGame *rain_game, Game *game, f32 *t, f32 dt) {
 		}
 	}
 
-
 	if (!rain_game->player_turn) {
+		u64 enemy_count = 0;
+
 		for (u32 i = rain_game->max_players; i < rain_game->entity_map_length; i++) {
 			if (rain_game->entity_map[i] != NULL) {
+				enemy_count += 1;
+
 				SightNode *tmp = rain_game->entity_map[i]->vis_head;
 				u8 found = false;
 				while (tmp != NULL && !found) {
@@ -430,10 +433,24 @@ void update_map(RainGame *rain_game, Game *game, f32 *t, f32 dt) {
 			}
 		}
 
+		if (enemy_count == 0) {
+			printf("You Win!\n");
+            game->cur_state = MainMenuState;
+			game->transition = true;
+		}
+
+		u64 player_count = 0;
 		for (u32 i = 0; i < rain_game->max_players; i++) {
 			if (rain_game->entity_map[i] != NULL) {
+				player_count += 1;
 				rain_game->entity_map[i]->turn_points = 2;
 			}
+		}
+
+		if (player_count == 0) {
+			printf("You Lost!\n");
+            game->cur_state = MainMenuState;
+			game->transition = true;
 		}
 
 		rain_game->player_turn = true;
